@@ -5,7 +5,7 @@
 - **Wave:** 10
 - **Status:** Complete
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 10-band equalizer implemented and verified in the live app 2026-11-11
+- **Last Checkpoint:** 10-band equalizer implemented, verified, and released as v0.1.1 2026-11-11
 
 ## Wave History
 
