@@ -12,7 +12,7 @@ for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":%WEB_PORT% " ^| findstr "LI
     echo Found existing process on port %WEB_PORT% ^(PID %%P^) - stopping it...
     taskkill /F /PID %%P >nul 2>&1
 )
-taskkill /F /IM electron.exe /FI "WINDOWTITLE eq MusicCube*" >nul 2>&1
+taskkill /IM electron.exe /FI "WINDOWTITLE eq MusicCube*" >nul 2>&1
 
 for /l %%I in (1,1,20) do (
     netstat -ano | findstr ":%WEB_PORT% " | findstr "LISTENING" >nul 2>&1 || goto :portfree

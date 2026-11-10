@@ -1,7 +1,7 @@
 import { Activity, ArrowUp, AudioLines, Brush, Check, Eye, Folder, FolderOpen, Ghost, ListMusic, Maximize2, Music, Plus, Power, Target, X } from "lucide";
 import type { IconNode } from "lucide";
 import { h, ic } from "./ui";
-import { s, save } from "./settings";
+import { s, save, saveSoon } from "./settings";
 import { MAX_USER_TEX, TEXTURES, compose, fileToTex } from "./textures";
 import { applyAuto } from "./autocolor";
 import { Concave } from "./icons";
@@ -77,12 +77,20 @@ function openExplorer(kind: "folder" | "list", onPick: (path: string) => void) {
     for (const d of cur?.dirs ?? []) {
       const r = h("div", "item click", ic(Folder), h("div", "t", h("span", "", d.name)));
       r.onclick = () => void go(d.path);
+      r.tabIndex = 0;
+      r.setAttribute("role", "button");
+      r.setAttribute("aria-label", d.name);
+      r.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); r.click(); } };
       rows.append(r);
     }
     for (const f of cur?.files ?? []) {
       if (kind === "list" && f.kind === "list") {
         const r = h("div", "item click", ic(ListMusic), h("div", "t", h("span", "", f.name)));
         r.onclick = () => { onPick(f.path); close(); };
+        r.tabIndex = 0;
+        r.setAttribute("role", "button");
+        r.setAttribute("aria-label", f.name);
+        r.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); r.click(); } };
         rows.append(r);
       } else if (kind === "folder" && f.kind === "audio") rows.append(h("div", "item dim", ic(Music), h("div", "t", h("span", "", f.name))));
     }
@@ -148,8 +156,9 @@ export function openMusicSource() {
 function range(icon: IconNode, tip: string, min: number, max: number, step: number, v: number, set: (n: number) => number | void, commit?: () => void) {
   const r = h("input");
   r.type = "range"; r.min = String(min); r.max = String(max); r.step = String(step); r.value = String(v);
-  r.oninput = () => { const v = set(Number(r.value)); if (typeof v === "number") r.value = String(v); save(); };
-  if (commit) r.onchange = commit;
+  r.setAttribute("aria-label", tip);
+  r.oninput = () => { const v = set(Number(r.value)); if (typeof v === "number") r.value = String(v); saveSoon(); };
+  r.onchange = () => { save(); commit?.(); };
   return h("div", "row", label(icon, tip), r);
 }
 
@@ -167,7 +176,12 @@ function check(text: string, v: boolean, set: (b: boolean) => void) {
 
 /** Settings pop-up: colours, texture grid (7 built-in + up to 3 of the user's), relief, visualizer, size/opacity, two check boxes. */
 export function openSettings() {
+  let pendingColors: (() => void)[] = [];
+  const flushColors = () => pendingColors.forEach((commit) => commit());
+  addEventListener("beforeunload", flushColors);
   openModal((render, close) => {
+    flushColors();
+    pendingColors = [];
     // Colour changes refresh everything in place (re-rendering would close an open colour picker).
     const pickers: [HTMLInputElement, "color" | "patternColor" | "iconColor"][] = [];
     const cells: [string, HTMLElement][] = [];
@@ -180,9 +194,11 @@ export function openSettings() {
     const picker = (key: "color" | "patternColor" | "iconColor", tip: string) => {
       const i = h("input");
       i.type = "color"; i.value = s[key];
+      i.setAttribute("aria-label", tip);
       let pending = 0, applied = "";
       const commit = () => {
         clearTimeout(pending);
+        pending = 0;
         if (applied === i.value) return;
         applied = i.value;
         s[key] = i.value;
@@ -193,6 +209,7 @@ export function openSettings() {
       // The native chooser does not expose pointerup; commit after its input events settle.
       i.oninput = () => { clearTimeout(pending); pending = window.setTimeout(commit, 100); };
       i.onchange = commit;
+      pendingColors.push(() => { if (pending) commit(); });
       pickers.push([i, key]);
       return tipped(i, tip);
     };
@@ -202,8 +219,12 @@ export function openSettings() {
     const card = (id: string, name: string) => {
       const c = h("div", "bg");
       c.dataset.tip = name;
+      c.tabIndex = 0;
+      c.setAttribute("role", "button");
+      c.setAttribute("aria-label", name);
       c.classList.toggle("on", s.texture === id);
       c.onclick = () => { s.texture = id; save(); hooks.texture(); render(); };
+      c.onkeydown = (e) => { if (e.target === c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); c.click(); } };
       cells.push([id, c]);
       grid.append(c);
       return c;
@@ -222,6 +243,9 @@ export function openSettings() {
     if (s.userTex.length < MAX_USER_TEX) {
       const add = h("div", "bg add", ic(Plus));
       add.dataset.tip = "질감 이미지 추가";
+      add.tabIndex = 0;
+      add.setAttribute("role", "button");
+      add.setAttribute("aria-label", "질감 이미지 추가");
       add.onclick = () => {
         const f = h("input");
         f.type = "file"; f.accept = "image/*";
@@ -236,6 +260,7 @@ export function openSettings() {
         };
         f.click();
       };
+      add.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); add.click(); } };
       grid.append(add);
     }
 
@@ -253,16 +278,16 @@ export function openSettings() {
     slider.before(h("span", "pm", "−"));
     slider.after(h("span", "pm", "+"));
 
-    const auto = check("Auto contrast", s.auto, (v) => {
+    const auto = check("자동 대비", s.auto, (v) => {
       s.auto = v;
       if (v) { s.manualPattern = s.manualIcon = false; applyAuto(); }
       changed();
     });
-    const top = check("Always on top", s.onTop, (v) => { s.onTop = v; save(); hooks.onTop(v); });
+    const top = check("항상 위", s.onTop, (v) => { s.onTop = v; save(); hooks.onTop(v); });
 
     queueMicrotask(refresh);
     return [
-      h("div", "row", picker("color", "Background color"), picker("patternColor", "Pattern color"), picker("iconColor", "Icon color"), h("span", "grow"), tb(Power, "종료", () => hooks.quit(), "icon"), tb(X, "닫기", close, "icon")),
+      h("div", "row", picker("color", "배경색"), picker("patternColor", "무늬색"), picker("iconColor", "아이콘색"), h("span", "grow"), tb(Power, "종료", () => hooks.quit(), "icon"), tb(X, "닫기", close, "icon")),
       grid,
       relief,
       modes,
@@ -270,5 +295,5 @@ export function openSettings() {
       h("div", "pair", range(Maximize2, "크기", 0.5, 1.8, 0.05, s.size, (n) => { s.size = n; hooks.size(); }, () => hooks.sizeCommit()), range(Eye, "투명도", 0, 1, 0.01, s.opacity, (n) => { s.opacity = n; hooks.look(); })),
       h("div", "row center", auto, top),
     ];
-  });
+  }, () => { flushColors(); removeEventListener("beforeunload", flushColors); save(); });
 }

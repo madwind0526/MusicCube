@@ -1,11 +1,15 @@
 // MusicCube desktop shell: one small transparent frameless always-on-top window, no server.
 const { app, BrowserWindow, desktopCapturer, ipcMain, net, protocol, screen, session } = require("electron");
 const fs = require("node:fs");
+const crypto = require("node:crypto");
 const os = require("node:os");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
 const DEV = process.argv.includes("--dev");
+const settingsFile = path.join(app.getPath("userData"), "settings.json");
+const fileToken = crypto.randomBytes(16).toString("hex");
+const allowedAudio = new Set();
 const { AUDIO, LIST, MAX_TRACKS, readPlaylist } = require("./playlist.cjs");
 const natural = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
 
@@ -14,7 +18,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: "mcfile", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } },
 ]);
 
-if (!app.requestSingleInstanceLock()) app.quit();
+if (!app.requestSingleInstanceLock()) { app.quit(); return; }
 
 let win;
 function createWindow() {
@@ -29,7 +33,7 @@ function createWindow() {
   else win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
 }
 
-const fileUrl = (p) => "mcfile://local/" + encodeURIComponent(p);
+const fileUrl = (p) => { allowedAudio.add(p); return "mcfile://local/" + encodeURIComponent(p) + "?token=" + fileToken; };
 
 function roots() {
   const out = [];
@@ -60,7 +64,7 @@ function walk(root) {
     for (const e of ents) {
       const full = path.join(d, e.name);
       if (e.isDirectory() && !e.name.startsWith(".")) stack.push(full);
-      else if (e.isFile() && AUDIO.test(e.name)) out.push(full);
+      else if (e.isFile() && AUDIO.test(e.name)) { out.push(full); if (out.length >= MAX_TRACKS) break; }
     }
   }
   return out.sort(natural).slice(0, MAX_TRACKS).map(fileUrl);
@@ -69,12 +73,28 @@ function walk(root) {
 ipcMain.handle("fs-list", (_e, p) => { try { return listDir(p); } catch { return null; } });
 ipcMain.handle("scan", (_e, dir) => { try { return walk(dir); } catch { return []; } });
 ipcMain.handle("read-playlist", (_e, file) => { try { return readPlaylist(file, fileUrl); } catch { return []; } });
+ipcMain.on("settings-load", (e) => {
+  try { e.returnValue = fs.readFileSync(settingsFile, "utf8"); } catch { e.returnValue = null; }
+});
+ipcMain.on("settings-save", (e, data) => {
+  e.returnValue = false;
+  if (typeof data !== "string" || data.length > 2_000_000) return;
+  try {
+    JSON.parse(data);
+    fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
+    fs.writeFileSync(settingsFile + ".tmp", data);
+    fs.renameSync(settingsFile + ".tmp", settingsFile);
+    e.returnValue = true;
+  } catch (error) { console.warn("Settings save failed", error); }
+});
 // Moves the window the message came from (the cube window or the settings/folder window).
-ipcMain.on("move-by", (e, dx, dy) => { const w = BrowserWindow.fromWebContents(e.sender); const [x, y] = w.getPosition(); w.setPosition(Math.round(x + dx), Math.round(y + dy)); });
+ipcMain.on("move-by", (e, dx, dy) => { const w = BrowserWindow.fromWebContents(e.sender); if (!w) return; const [x, y] = w.getPosition(); w.setPosition(Math.round(x + dx), Math.round(y + dy)); });
 
 // Settings / folder window: its own frameless window under the cube, so it can be moved on its own.
 let panel = null, panelKind = "";
+let onTop = true;
 ipcMain.on("open-panel", (_e, kind, anchorY) => {
+  if (kind !== "settings" && kind !== "folder") return;
   if (panel && !panel.isDestroyed()) { const same = panelKind === kind; panel.close(); if (same) return; } // same button again = close
   const mb = win.getBounds();
   const wa = screen.getDisplayMatching(mb).workArea;
@@ -82,24 +102,26 @@ ipcMain.on("open-panel", (_e, kind, anchorY) => {
   const x = Math.min(Math.max(Math.round(mb.x + mb.width / 2 - W / 2), wa.x), wa.x + wa.width - W);
   const y = Math.min(Math.max(Math.round(mb.y + anchorY), wa.y), wa.y + wa.height - H);
   panelKind = kind;
-  panel = new BrowserWindow({
+  const created = new BrowserWindow({
     width: W, height: H, x, y, title: "MusicCube Panel", frame: false, transparent: true, hasShadow: false, resizable: false,
-    skipTaskbar: true, alwaysOnTop: true, backgroundColor: "#00000000",
+    skipTaskbar: true, alwaysOnTop: onTop, backgroundColor: "#00000000",
     webPreferences: { preload: path.join(__dirname, "preload.cjs") },
   });
-  panel.on("closed", () => { panel = null; });
-  if (DEV) panel.loadURL(`http://127.0.0.1:5188/panel.html?kind=${kind}`);
-  else panel.loadFile(path.join(__dirname, "..", "dist", "panel.html"), { query: { kind } });
+  panel = created;
+  created.on("closed", () => { if (panel === created) { panel = null; panelKind = ""; } });
+  if (DEV) created.loadURL(`http://127.0.0.1:5188/panel.html?kind=${kind}`);
+  else created.loadFile(path.join(__dirname, "..", "dist", "panel.html"), { query: { kind } });
 });
 ipcMain.on("close-panel", (e) => BrowserWindow.fromWebContents(e.sender)?.close());
 ipcMain.on("fit-panel", (e, h) => {
   const w = BrowserWindow.fromWebContents(e.sender);
+  if (!w) return;
   const b = w.getBounds();
   const wa = screen.getDisplayMatching(b).workArea;
   h = Math.min(Math.round(h), wa.height);
   w.setBounds({ x: b.x, y: Math.max(wa.y, Math.min(b.y, wa.y + wa.height - h)), width: b.width, height: h });
 });
-ipcMain.on("on-top", (_e, v) => win.setAlwaysOnTop(!!v));
+ipcMain.on("on-top", (_e, v) => { onTop = !!v; win.setAlwaysOnTop(onTop); panel?.setAlwaysOnTop(onTop); });
 ipcMain.on("ignore", (_e, v) => win.setIgnoreMouseEvents(!!v, { forward: true }));
 // Resize keeping the cube where it is: it sits at the horizontal centre, `cubeY` px below the window top.
 let cubeY = 280;
@@ -117,9 +139,12 @@ ipcMain.on("quit", () => app.quit());
 
 app.whenReady().then(() => {
   // getDisplayMedia answers with the system's audio output (loopback), so the visualizer can analyse YouTube too.
-  session.defaultSession.setDisplayMediaRequestHandler(async (_req, cb) => {
-    const sources = await desktopCapturer.getSources({ types: ["screen"] });
-    cb({ video: sources[0], audio: "loopback" });
+  session.defaultSession.setDisplayMediaRequestHandler(async (req, cb) => {
+    if (req.frame !== win?.webContents.mainFrame) return cb({});
+    try {
+      const sources = await desktopCapturer.getSources({ types: ["screen"] });
+      cb(sources[0] ? { video: sources[0], audio: "loopback" } : {});
+    } catch { cb({}); }
   });
   // YouTube embeds refuse a page without an http(s) referrer (file:// pages get "error 153"), so give them one.
   session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"] }, (d, cb) => {
@@ -127,10 +152,14 @@ app.whenReady().then(() => {
     cb({ requestHeaders: d.requestHeaders });
   });
   protocol.handle("mcfile", async (req) => {
-    const p = decodeURIComponent(new URL(req.url).pathname.slice(1));
-    if (!AUDIO.test(p)) return new Response("", { status: 403 }); // only audio files are ever served
-    const r = await net.fetch(pathToFileURL(p).href, { headers: req.headers });
-    return new Response(r.body, { status: r.status, headers: { ...Object.fromEntries(r.headers), "access-control-allow-origin": "*" } });
+    try {
+      const url = new URL(req.url);
+      if (url.searchParams.get("token") !== fileToken) return new Response("", { status: 403 });
+      const p = decodeURIComponent(url.pathname.slice(1));
+      if (!AUDIO.test(p) || !allowedAudio.has(p)) return new Response("", { status: 403 });
+      const r = await net.fetch(pathToFileURL(p).href, { headers: req.headers });
+      return new Response(r.body, { status: r.status, headers: { ...Object.fromEntries(r.headers), "access-control-allow-origin": "*" } });
+    } catch { return new Response("", { status: 404 }); }
   });
   createWindow();
 });

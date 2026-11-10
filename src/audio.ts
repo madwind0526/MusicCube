@@ -11,7 +11,7 @@ export interface Player {
   readonly synthetic: boolean;
   readonly playing: boolean;
   /** Empty list = the default YouTube playlist. */
-  setList(urls: string[]): void;
+  setList(urls: string[], defaultWhenEmpty?: boolean): void;
   toggle(): void;
   next(): void;
   shuffle: boolean;
@@ -81,10 +81,15 @@ export function createPlayer(onState: () => void): Player {
 
   let yt: any = null, ytReady = false, ytPlaying = false, wantPlay = false, ytIdx = 0;
   let ytHost: HTMLElement | null = null;
+  let ytStarting = false, ytGeneration = 0;
 
   async function startYt() {
+    if (ytStarting) return;
+    ytStarting = true;
+    const generation = ytGeneration;
     try {
       const YT = await loadYtApi();
+      if (generation !== ytGeneration) return;
       const { list: pl, video } = parseYouTube(ytUrl);
       ytHost = document.createElement("div");
       ytHost.style.cssText = "position:fixed;left:-400px;bottom:0;width:200px;height:200px;pointer-events:none"; // audio only
@@ -120,10 +125,14 @@ export function createPlayer(onState: () => void): Player {
       });
     } catch (e) {
       console.warn("YouTube player failed", e); // offline or blocked: stays silent
+    } finally {
+      if (generation === ytGeneration) ytStarting = false;
     }
   }
 
   function destroyYt() {
+    ytGeneration++;
+    ytStarting = false;
     try { yt?.destroy(); } catch { /* already gone */ }
     ytHost?.remove();
     yt = ytHost = null;
@@ -152,7 +161,7 @@ export function createPlayer(onState: () => void): Player {
     set shuffle(v) { shuffle = v; if (ytReady) yt.setShuffle?.(v); },
     get repeat() { return repeat; },
     set repeat(v) { repeat = v; if (ytReady) yt.setLoop?.(v === "all"); },
-    setList(urls) {
+    setList(urls, defaultWhenEmpty = true) {
       el.pause();
       el.removeAttribute("src");
       remote.pause();
@@ -163,7 +172,7 @@ export function createPlayer(onState: () => void): Player {
       list = youtube ? [] : urls;
       idx = -1;
       errors = 0;
-      useYt = !!youtube || urls.length === 0;
+      useYt = !!youtube || (urls.length === 0 && defaultWhenEmpty);
       onState();
     },
     toggle() {
@@ -174,6 +183,7 @@ export function createPlayer(onState: () => void): Player {
         else if (ytPlaying) yt.pauseVideo(); else yt.playVideo();
         return;
       }
+      if (!list.length) return;
       if (idx < 0) load(0);
       else if (active().paused) { if (active() === el) void ctx.resume(); active().play().catch(onState); } else active().pause();
     },

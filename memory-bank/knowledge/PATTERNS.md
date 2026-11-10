@@ -13,3 +13,6 @@
 ```
 
 -->
+
+## Persist settings from continuously moving controls (2026-11-11)
+For a slider, apply the visual change on input, debounce disk writes briefly, then save on change and beforeunload. Also flush when the containing panel closes, since its browser process may exit before a pending timer fires.

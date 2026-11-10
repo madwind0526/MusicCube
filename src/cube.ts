@@ -10,9 +10,9 @@ export type Action = "play" | "shuffle" | "repeat" | "folder" | "settings" | "ho
 // BoxGeometry material order: +x, -x, +y, -y, +z, -z
 export const FACES: Action[] = ["play", "shuffle", "repeat", "folder", "settings", "hold"];
 
-const iconCache = new Map<IconNode, Promise<HTMLImageElement>>();
+const iconCache = new Map<IconNode, Promise<HTMLImageElement | null>>();
 // Lucide icon (the set Paradise uses) -> image, so it can be drawn onto a face texture.
-function iconImage(node: IconNode): Promise<HTMLImageElement> {
+function iconImage(node: IconNode): Promise<HTMLImageElement | null> {
   let p = iconCache.get(node);
   if (!p) {
     const svg = ic(node);
@@ -24,6 +24,7 @@ function iconImage(node: IconNode): Promise<HTMLImageElement> {
     p = new Promise((res) => {
       const img = new Image();
       img.onload = () => res(img);
+      img.onerror = () => res(null);
       img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(svg));
     });
     iconCache.set(node, p);
@@ -102,6 +103,7 @@ export function createCube() {
 
   function setIcon(action: Action, icon: IconNode, on = true) {
     const f = faces[FACES.indexOf(action)];
+    if (f.icon === icon && f.on === on) return;
     f.icon = icon;
     f.on = on;
     void paint(f);

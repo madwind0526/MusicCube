@@ -75,20 +75,22 @@ window.addEventListener("resize", resize);
 
 // The settings/folder window saves into localStorage; this window follows.
 const source = () => JSON.stringify([s.folder, s.playlistFile, s.urls, s.sourceRevision]);
+const surface = () => JSON.stringify([s.color, s.patternColor, s.iconColor, s.texture, s.relief, s.userTex]);
 let sourceVersion = 0;
 async function applySource(play = false) {
   const version = ++sourceVersion;
+  const selected = !!(s.folder || s.playlistFile || s.urls.length);
   const urls = s.folder ? await window.api?.scan(s.folder) : s.playlistFile ? await window.api?.readPlaylist(s.playlistFile) : s.urls;
-  if (version === sourceVersion) { player.setList(urls ?? []); if (play) player.toggle(); }
+  if (version === sourceVersion) { player.setList(urls ?? [], !selected); if (play && (!selected || !!urls?.length)) player.toggle(); }
 }
-let seen = { size: s.size, source: source(), onTop: s.onTop };
+let seen = { size: s.size, source: source(), onTop: s.onTop, opacity: s.opacity, surface: surface() };
 onExternalChange(() => {
-  cube.applyLook();
-  cube.applyTexture();
+  if (s.opacity !== seen.opacity) cube.applyLook();
+  if (surface() !== seen.surface) cube.applyTexture();
   if (s.size !== seen.size) { layoutWindow(); resize(); }
   if (s.onTop !== seen.onTop) window.api?.setOnTop(s.onTop);
   if (source() !== seen.source) void applySource(true);
-  seen = { size: s.size, source: source(), onTop: s.onTop };
+  seen = { size: s.size, source: source(), onTop: s.onTop, opacity: s.opacity, surface: surface() };
 });
 
 // ---- pointer: drag rotates the cube, a click presses a face, right-drag on the cube moves the window ----
@@ -138,6 +140,8 @@ canvas.addEventListener("pointerup", (e) => {
   const hit = hitAt(e);
   if (hit?.face) void ACTIONS[FACES[hit.face.materialIndex]]();
 });
+canvas.addEventListener("pointercancel", () => { down = null; });
+canvas.addEventListener("lostpointercapture", () => { down = null; });
 
 // ---- loop ----
 let prev = performance.now();

@@ -2,5 +2,5 @@
 export { Anchor, Settings as Cog, FolderOpen, Pause, Play, Repeat, Repeat1, Shuffle, Wind } from "lucide";
 
 import type { IconNode } from "lucide";
-/** 凹 ("오목 요"): the relief icon, drawn like the character (a block with a notch cut from the top). */
+/** The relief icon: a block with a notch cut from the top. */
 export const Concave: IconNode = [["path", { d: "M4 4h5v8h6V4h5v16H4z" }]];

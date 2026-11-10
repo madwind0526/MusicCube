@@ -9,6 +9,7 @@ html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background:
 svg { width: 18px; height: 18px; stroke-width: 1.6; }
 button { all: unset; cursor: pointer; display: grid; place-items: center; color: var(--fg); transition: background 0.2s, transform 0.15s; }
 button:active { transform: scale(0.94); }
+button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 
 /* Pop-up: a small translucent black panel under the cube (main.ts makes room for it below the cube). */
 .modal { position: absolute; left: 0; right: 0; bottom: 0; top: var(--cube-h, 360px); padding: 0 12px 12px; display: flex; align-items: flex-start; justify-content: center; pointer-events: none !important; animation: fade 0.2s ease; }
@@ -59,8 +60,8 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
 
 /* Speech-bubble tooltip from data-tip */
 [data-tip] { position: relative; }
-[data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 4px 9px; border-radius: 8px; background: #000; color: #fff; font-size: 11px; line-height: 1.2; z-index: 5; pointer-events: none; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
-[data-tip]:hover::before { content: ""; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #000; border-bottom: 0; z-index: 5; pointer-events: none; }
+[data-tip]:is(:hover, :focus-within)::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 4px 9px; border-radius: 8px; background: #000; color: #fff; font-size: 11px; line-height: 1.2; z-index: 5; pointer-events: none; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+[data-tip]:is(:hover, :focus-within)::before { content: ""; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #000; border-bottom: 0; z-index: 5; pointer-events: none; }
 .chip { flex: 1; height: 28px; border-radius: 14px; background: var(--soft); font-size: 12px; }
 .chip:hover { background: rgba(255, 255, 255, 0.25); }
 .chip.on { background: rgba(255, 255, 255, 0.4); color: #fff; }

@@ -2,6 +2,8 @@
 declare global {
   interface Window {
     api?: {
+      settingsLoad(): string | null;
+      settingsSave(data: string): boolean;
       fsList(p: string): Promise<{ path: string; parent: string; dirs: { name: string; path: string }[]; files: { name: string; path: string; kind: "audio" | "list" }[] } | null>;
       scan(dir: string): Promise<string[]>;
       readPlaylist(file: string): Promise<string[]>;

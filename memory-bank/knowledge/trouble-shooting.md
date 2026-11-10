@@ -40,3 +40,12 @@ The `PLCqwmfitbQCY` playlist is valid on YouTube. An IFrame created with only `l
 
 ## Camera zoom for fixed pixel size (2026-11-10)
 With a resizable window, zoom = targetPx / windowHeightPx (not the inverse), plus setViewOffset to keep the cube at a fixed pixel position.
+
+## Shared settings across Electron dev and packaged origins (2026-11-11)
+Electron dev (http://127.0.0.1:5188) and packaged (file://) pages have different localStorage origins. Settings saved in one appeared reset in the other. Store a shared settings JSON under app.getPath("userData"), migrate the existing localStorage once, and flush pending changes before the window closes. Verified in an isolated Electron profile by changing settings in production, restarting in dev, and restarting in production.
+
+## Panel reference after fast window switch (2026-11-11)
+Closing an Electron BrowserWindow can fire its closed callback after a replacement panel was created. Only clear the shared panel variable when it still refers to the window whose callback fired. Verified by switching settings/folder panels rapidly without an orphan window.
+
+## Duplicate YouTube player during API load (2026-11-11)
+Two quick play requests before the IFrame API loads can each start player creation. Guard the pending start and invalidate its generation when the source changes. Verified with an automated test and a live Electron run that produced one iframe.

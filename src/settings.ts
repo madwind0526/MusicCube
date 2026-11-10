@@ -25,15 +25,43 @@ const DEFAULTS: Settings = {
 };
 
 function load(): Settings {
-  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) ?? "{}") }; } catch { return { ...DEFAULTS }; }
+  let disk: string | null = null, local: string | null = null;
+  try { disk = window.api?.settingsLoad() ?? null; } catch { /* browser-only mode */ }
+  try { local = localStorage.getItem(KEY); } catch { /* storage unavailable */ }
+  for (const raw of [disk, local]) {
+    if (!raw) continue;
+    try {
+      const value = JSON.parse(raw);
+      if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+      if (raw === local && window.api) window.api.settingsSave(raw); // migrate settings saved before the shared file existed
+      return { ...DEFAULTS, ...value };
+    } catch { /* try the other store */ }
+  }
+  return { ...DEFAULTS };
 }
 
 /** The one live settings object, shared by every module. */
 export const s = load();
 
+let saveTimer = 0;
 export function save(): void {
-  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage unavailable or full: settings last for this run only */ }
+  clearTimeout(saveTimer);
+  saveTimer = 0;
+  const data = JSON.stringify(s);
+  try { localStorage.setItem(KEY, data); } catch { /* the app file can still keep the settings */ }
+  if (window.api && !window.api.settingsSave(data)) console.warn("Settings file save failed");
 }
+
+export function saveSoon(): void {
+  clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(save, 150);
+}
+
+export function flushSave(): void {
+  if (saveTimer) save();
+}
+
+window.addEventListener("beforeunload", flushSave);
 
 // Settings are shared by the cube window and the settings/folder window through localStorage:
 // a change saved in one window arrives here as a storage event.

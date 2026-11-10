@@ -2,10 +2,10 @@
 
 ## Current Wave
 
-- **Wave:** 8
+- **Wave:** 9
 - **Status:** Ready
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** Paradise playlist embed behavior rechecked 2026-11-10
+- **Last Checkpoint:** Settings persistence and code review fixes verified 2026-11-11
 
 ## Wave History
 
@@ -19,6 +19,7 @@
 | 6 | 기존 색상 선택창 유지 및 선택 중 지연 완화 | Complete |
 | 7 | 기본 YouTube 재생목록 전체 반복 복구 | Complete |
 | 8 | Paradise YouTube 재생 결과 재검증 및 문제 기록 정정 | Complete |
+| 9 | 설정 영구 저장 및 코드 리뷰 수정과 회귀 검증 | Complete |
 
 ## Session Notes
 

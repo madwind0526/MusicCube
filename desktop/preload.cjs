@@ -1,6 +1,8 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
+  settingsLoad: () => ipcRenderer.sendSync("settings-load"),
+  settingsSave: (data) => ipcRenderer.sendSync("settings-save", data),
   fsList: (p) => ipcRenderer.invoke("fs-list", p),
   scan: (dir) => ipcRenderer.invoke("scan", dir),
   readPlaylist: (file) => ipcRenderer.invoke("read-playlist", file),
