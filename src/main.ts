@@ -74,14 +74,21 @@ function resize() {
 window.addEventListener("resize", resize);
 
 // The settings/folder window saves into localStorage; this window follows.
-let seen = { size: s.size, folder: s.folder, onTop: s.onTop };
+const source = () => JSON.stringify([s.folder, s.playlistFile, s.urls]);
+let sourceVersion = 0;
+async function applySource() {
+  const version = ++sourceVersion;
+  const urls = s.folder ? await window.api?.scan(s.folder) : s.playlistFile ? await window.api?.readPlaylist(s.playlistFile) : s.urls;
+  if (version === sourceVersion) player.setList(urls ?? []);
+}
+let seen = { size: s.size, source: source(), onTop: s.onTop };
 onExternalChange(() => {
   cube.applyLook();
   cube.applyTexture();
   if (s.size !== seen.size) { layoutWindow(); resize(); }
   if (s.onTop !== seen.onTop) window.api?.setOnTop(s.onTop);
-  if (s.folder !== seen.folder) void (s.folder ? window.api?.scan(s.folder).then((f) => player.setList(f)) : player.setList([])); // empty = default music
-  seen = { size: s.size, folder: s.folder, onTop: s.onTop };
+  if (source() !== seen.source) void applySource();
+  seen = { size: s.size, source: source(), onTop: s.onTop };
 });
 
 // ---- pointer: drag rotates the cube, a click presses a face, right-drag on the cube moves the window ----
@@ -154,7 +161,7 @@ cube.applyLook();
 cube.applyTexture();
 refreshIcons();
 window.api?.setOnTop(s.onTop);
-if (s.folder) void window.api?.scan(s.folder).then((f) => player.setList(f)); // empty result falls back to the default music
+if (s.folder || s.playlistFile || s.urls.length) void applySource();
 requestAnimationFrame(frame);
 
 if (import.meta.env.DEV) (window as any).__mc = { player, ACTIONS, s, cube }; // test hook, dev mode only

@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("api", {
   fsList: (p) => ipcRenderer.invoke("fs-list", p),
   scan: (dir) => ipcRenderer.invoke("scan", dir),
+  readPlaylist: (file) => ipcRenderer.invoke("read-playlist", file),
   moveBy: (dx, dy) => ipcRenderer.send("move-by", dx, dy),
   setOnTop: (v) => ipcRenderer.send("on-top", v),
   ignoreMouse: (v) => ipcRenderer.send("ignore", v),

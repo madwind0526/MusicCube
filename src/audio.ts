@@ -1,5 +1,5 @@
-// Two backends: an <audio> element for local files (feeds the analyser), or the YouTube IFrame player used
-// when no folder is chosen (its sound cannot reach Web Audio, so the visualizer fakes a beat-driven spectrum).
+// Local audio feeds the analyser; remote audio plays directly, and YouTube uses an IFrame player.
+// Sources outside Web Audio use a synthetic spectrum when loopback capture is unavailable.
 
 /** Played when no folder is chosen: same YouTube playlist as Paradise. */
 export const DEFAULT_TRACK = "https://www.youtube.com/watch?v=1t39vq3LdRs&list=PLCqwmfitbQCY";
@@ -7,7 +7,7 @@ export const DEFAULT_TRACK = "https://www.youtube.com/watch?v=1t39vq3LdRs&list=P
 export interface Player {
   /** The analyser to read: the file's, or (YouTube) the one fed by the system's audio output. */
   readonly analyser: AnalyserNode;
-  /** True while YouTube plays and the system sound could not be captured: the spectrum is then faked. */
+  /** True when the current source cannot feed the analyser and the spectrum is faked. */
   readonly synthetic: boolean;
   readonly playing: boolean;
   /** Empty list = the default YouTube playlist. */
@@ -20,8 +20,12 @@ export interface Player {
 
 function parseYouTube(u: string): { list?: string; video?: string } {
   const url = new URL(u);
-  return { list: url.searchParams.get("list") ?? undefined, video: url.searchParams.get("v") ?? undefined };
+  return { list: url.searchParams.get("list") ?? undefined, video: url.searchParams.get("v") ?? (url.hostname === "youtu.be" ? url.pathname.slice(1) : undefined) };
 }
+
+const isYouTube = (u: string) => {
+  try { return /^(?:www\.|m\.|music\.)?(?:youtube\.com|youtu\.be)$/i.test(new URL(u).hostname); } catch { return false; }
+};
 
 let ytApi: Promise<any> | null = null;
 function loadYtApi(): Promise<any> {
@@ -38,6 +42,7 @@ function loadYtApi(): Promise<any> {
 
 export function createPlayer(onState: () => void): Player {
   const el = new Audio();
+  const remote = new Audio();
   if (import.meta.env.DEV) (window as any).__el = el; // test hook, dev mode only
   el.crossOrigin = "anonymous"; // mcfile:// answers with CORS headers, so the analyser can read it
   const ctx = new AudioContext();
@@ -50,6 +55,8 @@ export function createPlayer(onState: () => void): Player {
   let list: string[] = [];
   let idx = -1;
   let useYt = true;
+  let ytUrl = DEFAULT_TRACK;
+  let errors = 0;
 
   // ---- YouTube backend ----
   // The IFrame player's sound cannot be tapped, so capture the system's audio output (Electron loopback) and analyse that.
@@ -79,7 +86,7 @@ export function createPlayer(onState: () => void): Player {
   async function startYt() {
     try {
       const YT = await loadYtApi();
-      const parsed = parseYouTube(DEFAULT_TRACK);
+      const parsed = parseYouTube(ytUrl);
       const pl = videoOnly ? undefined : parsed.list, video = parsed.video;
       ytHost = document.createElement("div");
       ytHost.style.cssText = "position:fixed;left:-400px;bottom:0;width:200px;height:200px;pointer-events:none"; // audio only
@@ -126,16 +133,24 @@ export function createPlayer(onState: () => void): Player {
     ytReady = ytPlaying = wantPlay = false;
   }
 
-  // ---- file backend ----
-  const load = (i: number) => { idx = i; el.src = list[i]; void ctx.resume(); el.play().catch(onState); };
+  // ---- local and remote audio backends ----
+  const active = () => list[idx]?.startsWith("mcfile:") ? el : remote;
+  const load = (i: number) => {
+    el.pause(); remote.pause();
+    idx = i;
+    const current = active();
+    current.src = list[i];
+    if (current === el) void ctx.resume();
+    current.play().catch(onState);
+  };
 
   let shuffle = false;
   let repeat: Player["repeat"] = "all";
 
   const p: Player = {
     get analyser() { return useYt && loopAnalyser ? loopAnalyser : analyser; },
-    get synthetic() { return useYt && !loopAnalyser; },
-    get playing() { return useYt ? ytPlaying : !el.paused; },
+    get synthetic() { return useYt ? !loopAnalyser : idx >= 0 && active() === remote; },
+    get playing() { return useYt ? ytPlaying : !active().paused; },
     get shuffle() { return shuffle; },
     set shuffle(v) { shuffle = v; if (ytReady) yt.setShuffle?.(v); },
     get repeat() { return repeat; },
@@ -143,10 +158,16 @@ export function createPlayer(onState: () => void): Player {
     setList(urls) {
       el.pause();
       el.removeAttribute("src");
+      remote.pause();
+      remote.removeAttribute("src");
       destroyYt();
-      list = urls;
+      const youtube = urls.find(isYouTube);
+      ytUrl = youtube ?? DEFAULT_TRACK;
+      videoOnly = false;
+      list = youtube ? [] : urls;
       idx = -1;
-      useYt = urls.length === 0;
+      errors = 0;
+      useYt = !!youtube || urls.length === 0;
       onState();
     },
     toggle() {
@@ -158,21 +179,28 @@ export function createPlayer(onState: () => void): Player {
         return;
       }
       if (idx < 0) load(0);
-      else if (el.paused) { void ctx.resume(); el.play().catch(onState); } else el.pause();
+      else if (active().paused) { if (active() === el) void ctx.resume(); active().play().catch(onState); } else active().pause();
     },
     next() {
       if (useYt) { if (ytReady) yt.nextVideo(); return; }
-      load(shuffle ? Math.floor(Math.random() * list.length) : (idx + 1) % list.length);
+      if (list.length) load(shuffle ? Math.floor(Math.random() * list.length) : (idx + 1) % list.length);
     },
   };
 
-  el.addEventListener("play", onState);
-  el.addEventListener("pause", onState);
-  el.addEventListener("error", () => { if (el.getAttribute("src")) p.next(); }); // skip an unreadable file
-  el.addEventListener("ended", () => {
-    if (repeat === "one") load(idx);
-    else if (repeat === "all" || shuffle || idx < list.length - 1) p.next();
-    else onState();
-  });
+  for (const media of [el, remote]) {
+    media.addEventListener("play", () => { errors = 0; onState(); });
+    media.addEventListener("pause", onState);
+    media.addEventListener("error", () => {
+      if (media !== active() || !media.getAttribute("src")) return;
+      if (++errors < list.length) p.next();
+      else { media.removeAttribute("src"); onState(); }
+    });
+    media.addEventListener("ended", () => {
+      if (media !== active()) return;
+      if (repeat === "one") load(idx);
+      else if (repeat === "all" || shuffle || idx < list.length - 1) p.next();
+      else onState();
+    });
+  }
   return p;
 }

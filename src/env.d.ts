@@ -2,8 +2,9 @@
 declare global {
   interface Window {
     api?: {
-      fsList(p: string): Promise<{ path: string; parent: string; dirs: { name: string; path: string }[]; files: { name: string; path: string }[] } | null>;
+      fsList(p: string): Promise<{ path: string; parent: string; dirs: { name: string; path: string }[]; files: { name: string; path: string; kind: "audio" | "list" }[] } | null>;
       scan(dir: string): Promise<string[]>;
+      readPlaylist(file: string): Promise<string[]>;
       moveBy(dx: number, dy: number): void;
       setOnTop(v: boolean): void;
       ignoreMouse(v: boolean): void;

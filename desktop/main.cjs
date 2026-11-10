@@ -6,8 +6,7 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
 const DEV = process.argv.includes("--dev");
-const AUDIO = /\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|webm)$/i;
-const MAX_TRACKS = 5000;
+const { AUDIO, LIST, MAX_TRACKS, readPlaylist } = require("./playlist.cjs");
 const natural = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
 
 // Local audio is served through mcfile:// so the page stays web-secure and the analyser gets CORS-clean media.
@@ -45,7 +44,7 @@ function listDir(p) {
   p = path.resolve(p);
   const ents = fs.readdirSync(p, { withFileTypes: true });
   const dirs = ents.filter((e) => e.isDirectory() && !e.name.startsWith(".")).map((e) => e.name).sort(natural).map((name) => ({ name, path: path.join(p, name) }));
-  const files = ents.filter((e) => e.isFile() && AUDIO.test(e.name)).map((e) => e.name).sort(natural).map((name) => ({ name, path: path.join(p, name) }));
+  const files = ents.filter((e) => e.isFile() && (AUDIO.test(e.name) || LIST.test(e.name))).map((e) => e.name).sort(natural).map((name) => ({ name, path: path.join(p, name), kind: LIST.test(name) ? "list" : "audio" }));
   const up = path.dirname(p);
   return { path: p, parent: up === p ? "@roots" : up, dirs, files };
 }
@@ -69,6 +68,7 @@ function walk(root) {
 
 ipcMain.handle("fs-list", (_e, p) => { try { return listDir(p); } catch { return null; } });
 ipcMain.handle("scan", (_e, dir) => { try { return walk(dir); } catch { return []; } });
+ipcMain.handle("read-playlist", (_e, file) => { try { return readPlaylist(file, fileUrl); } catch { return []; } });
 // Moves the window the message came from (the cube window or the settings/folder window).
 ipcMain.on("move-by", (e, dx, dy) => { const w = BrowserWindow.fromWebContents(e.sender); const [x, y] = w.getPosition(); w.setPosition(Math.round(x + dx), Math.round(y + dy)); });
 

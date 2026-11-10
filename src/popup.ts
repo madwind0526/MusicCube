@@ -1,4 +1,4 @@
-import { Activity, ArrowUp, AudioLines, Brush, Check, Eye, Folder, Ghost, Maximize2, Music, Plus, Power, Target, X } from "lucide";
+import { Activity, ArrowUp, AudioLines, Brush, Check, Eye, Folder, FolderOpen, Ghost, ListMusic, Maximize2, Music, Plus, Power, Target, X } from "lucide";
 import type { IconNode } from "lucide";
 import { h, ic } from "./ui";
 import { s, save } from "./settings";
@@ -26,9 +26,9 @@ function tb(icon: IconNode, tip: string, fn: () => void, cls = ""): HTMLButtonEl
 // Tooltip on a plain icon label (the icon in front of a slider).
 const label = (icon: IconNode, tip: string) => { const e = h("span", "lab", ic(icon)); e.dataset.tip = tip; return e; };
 
-function openModal(build: (render: () => void, close: () => void) => (Node | string)[]) {
+function openModal(build: (render: () => void, close: () => void) => (Node | string)[], onClose?: () => void) {
   const back = h("div", "modal");
-  const close = () => { back.remove(); removeEventListener("keydown", onKey); hooks.modal(--depth > 0); };
+  const close = () => { back.remove(); removeEventListener("keydown", onKey); onClose?.(); hooks.modal(--depth > 0); };
   const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && hud.lastElementChild === back) close(); };
   back.onclick = (e) => { if (e.target === back) close(); };
   addEventListener("keydown", onKey);
@@ -53,13 +53,15 @@ function openModal(build: (render: () => void, close: () => void) => (Node | str
   return close;
 }
 
-interface FsList { path: string; parent: string; dirs: { name: string; path: string }[]; files: { name: string; path: string }[] }
+interface FsList { path: string; parent: string; dirs: { name: string; path: string }[]; files: { name: string; path: string; kind: "audio" | "list" }[] }
 
-/** Folder pop-up (the same explorer as Paradise): browse, then pick a folder; all its sub-folders play. */
-export function openExplorer(onPick: (dir: string) => void, onDefault: () => void) {
+/** Browse folders or playlist files. */
+function openExplorer(kind: "folder" | "list", onPick: (path: string) => void) {
   let data: FsList | null = null;
   let rerender = () => {};
-  const go = async (p: string) => { data = (await window.api?.fsList(p)) ?? data; rerender(); };
+  const go = async (p: string) => { data = (await window.api?.fsList(p)) ?? (p ? await window.api?.fsList("") : data) ?? data; rerender(); };
+  const source = hud.lastElementChild as HTMLElement;
+  source.hidden = true;
   openModal((render, close) => {
     rerender = render;
     const cur = data;
@@ -68,18 +70,70 @@ export function openExplorer(onPick: (dir: string) => void, onDefault: () => voi
       tb(ArrowUp, "위로", () => cur && void go(cur.parent), "icon"),
       h("div", "pathbar", !cur ? "…" : cur.path === "@roots" ? "컴퓨터" : cur.path),
     );
-    if (cur && cur.path !== "@roots") head.append(tb(Check, "이 폴더 선택", () => { onPick(cur.path); close(); }, "icon ok"));
-    head.append(tb(Music, "기본 음악 (YouTube)", () => { onDefault(); close(); }, "icon"), tb(X, "닫기", close, "icon"));
+    if (kind === "folder" && cur && cur.path !== "@roots") head.append(tb(Check, "이 폴더 선택", () => { onPick(cur.path); close(); }, "icon ok"));
+    head.append(tb(X, "닫기", close, "icon"));
     const rows = h("div", "list");
     for (const d of cur?.dirs ?? []) {
       const r = h("div", "item click", ic(Folder), h("div", "t", h("span", "", d.name)));
       r.onclick = () => void go(d.path);
       rows.append(r);
     }
-    for (const f of cur?.files ?? []) rows.append(h("div", "item dim", ic(Music), h("div", "t", h("span", "", f.name)))); // context only
+    for (const f of cur?.files ?? []) {
+      if (kind === "list" && f.kind === "list") {
+        const r = h("div", "item click", ic(ListMusic), h("div", "t", h("span", "", f.name)));
+        r.onclick = () => { onPick(f.path); close(); };
+        rows.append(r);
+      } else if (kind === "folder" && f.kind === "audio") rows.append(h("div", "item dim", ic(Music), h("div", "t", h("span", "", f.name))));
+    }
     return [head, rows.children.length ? rows : h("div", "empty", "—")];
+  }, () => { source.hidden = false; });
+  void go(kind === "folder" ? s.folder : "");
+}
+
+export function openMusicSource() {
+  openModal((_render, close) => {
+    const src = h("input", "source-input");
+    src.type = "text";
+    src.placeholder = "https:// 음악 주소 입력";
+    src.setAttribute("aria-label", "음악 URL 입력");
+    src.spellcheck = false;
+    const shown = () => s.folder || s.playlistFile || s.urls.join(" ");
+    src.value = shown();
+    const error = h("div", "source-error");
+    const setUrls = () => {
+      if (src.value === shown()) return;
+      const parts = src.value.split(/[\s,;]+/).filter(Boolean);
+      if (parts.some((v) => { try { return !["http:", "https:"].includes(new URL(v).protocol); } catch { return true; } })) {
+        error.textContent = "http 또는 https 주소를 입력해 주세요.";
+        return;
+      }
+      s.urls = parts;
+      s.folder = s.playlistFile = "";
+      save();
+      error.textContent = "";
+    };
+    src.onchange = setUrls;
+    src.onkeydown = (e) => { if (e.key === "Enter") src.blur(); };
+    src.onfocus = () => { if (s.folder || s.playlistFile) src.select(); };
+    const pick = (kind: "folder" | "list") => openExplorer(kind, (path) => {
+      s.folder = kind === "folder" ? path : "";
+      s.playlistFile = kind === "list" ? path : "";
+      s.urls = [];
+      save();
+      src.value = shown();
+      error.textContent = "";
+    });
+    const button = (name: string, icon: IconNode, kind: "folder" | "list") => {
+      const b = h("button", "srcbtn", name, ic(icon));
+      b.onclick = () => pick(kind);
+      return b;
+    };
+    return [
+      h("div", "row", h("div", "poptitle", "음악 선택"), h("span", "grow"), tb(X, "닫기", close, "icon")),
+      src, error,
+      h("div", "srcbtns", button("폴더", FolderOpen, "folder"), button("재생목록", ListMusic, "list")),
+    ];
   });
-  void go("");
 }
 
 function range(icon: IconNode, tip: string, min: number, max: number, step: number, v: number, set: (n: number) => number | void, commit?: () => void) {
