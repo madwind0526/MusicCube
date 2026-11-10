@@ -135,8 +135,7 @@ export function openMusicSource() {
       s.urls = [DEFAULT_TRACK];
       s.sourceRevision++;
       save();
-      src.value = shown();
-      error.textContent = "";
+      close();
     };
     return [
       h("div", "row source-head", h("div", "poptitle", "Music Selection"), h("span", "grow"), defaultSong, tb(X, "닫기", close, "icon")),

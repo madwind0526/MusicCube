@@ -32,6 +32,9 @@ When `.pop` has `max-height: calc(100vh - 46px)`, measuring the visible `#hud` h
 ## Color picker drags trigger repeated texture rendering (2026-11-10)
 The three color inputs used `oninput`, so intermediate picker colors each saved settings and regenerated every texture preview. Use `onchange` for the commit handler; keep the same `applyAuto`, save, texture update, and preview refresh in that handler. Browser verification confirmed `input` leaves the saved color unchanged and `change` applies it.
 
+## Default Song leaves the music panel open (2026-11-10)
+The button saved the selected URL but only updated fields inside the open popup. Call the existing modal `close()` after saving. The panel's `hooks.modal(false)` then requests that Electron close the standalone window.
+
 ## Paradise DEFAULT_TRACK playlist id is rejected by YouTube (error 2)
 `list=PLCqwmfitbQCY` is too short; audio.ts falls back to the single video `1t39vq3LdRs`.
 
