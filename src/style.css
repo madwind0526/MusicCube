@@ -1,0 +1,79 @@
+:root { --fg: #eef1f8; --dim: #b4bbd0; --soft: rgba(255, 255, 255, 0.12); }
+* { box-sizing: border-box; }
+/* Fully transparent page: only the cube, the visualizer and pop-ups are visible. */
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; user-select: none; color: var(--fg); font-family: system-ui, "Pretendard", "Noto Sans KR", sans-serif; }
+#c, #viz { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+#viz { pointer-events: none; }
+#hud { position: absolute; inset: 0; pointer-events: none; }
+#hud > * { pointer-events: auto; }
+svg { width: 18px; height: 18px; stroke-width: 1.6; }
+button { all: unset; cursor: pointer; display: grid; place-items: center; color: var(--fg); transition: background 0.2s, transform 0.15s; }
+button:active { transform: scale(0.94); }
+
+/* Pop-up: a small translucent black panel under the cube (main.ts makes room for it below the cube). */
+.modal { position: absolute; left: 0; right: 0; bottom: 0; top: var(--cube-h, 360px); padding: 0 12px 12px; display: flex; align-items: flex-start; justify-content: center; pointer-events: none !important; animation: fade 0.2s ease; }
+.pop { pointer-events: auto; width: 100%; max-width: 320px; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; border-radius: 18px; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); }
+@keyframes fade { from { opacity: 0; } }
+.row { display: flex; gap: 8px; align-items: center; }
+.grow { flex: 1; }
+.row > button.icon { width: 32px; height: 32px; flex: none; border-radius: 50%; background: var(--soft); }
+.row > button.icon:hover { background: rgba(255, 255, 255, 0.25); }
+.row > button.icon.on, .row > button.icon.ok { background: rgba(255, 255, 255, 0.35); }
+.lab { flex: none; width: 28px; height: 28px; display: grid; place-items: center; color: var(--dim); }
+.empty { color: var(--dim); text-align: center; padding: 14px; }
+.list { display: flex; flex-direction: column; gap: 4px; max-height: 190px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.3) transparent; }
+.item { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 12px; background: var(--soft); font-size: 13px; }
+.item.click { cursor: pointer; }
+.item.click:hover { background: rgba(255, 255, 255, 0.24); }
+.item.dim { opacity: 0.5; }
+.item > svg { flex: none; color: var(--dim); }
+.item .t { flex: 1; min-width: 0; }
+.item .t span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pathbar { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 10px; background: var(--soft); font-size: 11px; direction: rtl; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Surface textures as small pictures */
+.texrow { display: flex; gap: 6px; justify-content: space-between; }
+.tex { position: relative; width: 32px; height: 32px; border-radius: 9px; background-size: cover; cursor: pointer; border: 2px solid transparent; filter: brightness(0.75); transition: filter 0.2s; }
+.tex:hover { filter: none; }
+.tex.on { border-color: #fff; filter: none; }
+
+input[type="range"] { -webkit-appearance: none; appearance: none; flex: 1; height: 24px; background: transparent; cursor: pointer; margin: 0; min-width: 0; }
+input[type="range"]::-webkit-slider-runnable-track { height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.4); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5.5px; border-radius: 50%; background: #fff; }
+input[type="color"] { -webkit-appearance: none; appearance: none; width: 32px; height: 32px; flex: none; padding: 0; border: 2px solid rgba(255, 255, 255, 0.6); border-radius: 50%; background: none; cursor: pointer; position: relative; }
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+
+/* Speech-bubble tooltip from data-tip */
+[data-tip] { position: relative; }
+[data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 4px 9px; border-radius: 8px; background: #000; color: #fff; font-size: 11px; line-height: 1.2; z-index: 5; pointer-events: none; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+[data-tip]:hover::before { content: ""; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #000; border-bottom: 0; z-index: 5; pointer-events: none; }
+.chip { flex: 1; height: 28px; border-radius: 14px; background: var(--soft); font-size: 12px; }
+.chip:hover { background: rgba(255, 255, 255, 0.25); }
+.chip.on { background: rgba(255, 255, 255, 0.4); color: #fff; }
+
+/* Background grid (2 rows of 5), icon-style buttons, check boxes */
+.tipwrap { display: inline-flex; flex: none; }
+.bggrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.bg { position: relative; aspect-ratio: 1; border-radius: 10px; background-size: cover; background-position: center; cursor: pointer; border: 2px solid transparent; filter: brightness(0.8); transition: filter 0.2s; }
+.bg:hover { filter: none; }
+.bg.on { border-color: #fff; filter: none; }
+.bg.add { display: grid; place-items: center; background: var(--soft); border: 1.5px dashed rgba(255, 255, 255, 0.35); filter: none; color: var(--dim); }
+.bg .del { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); opacity: 0; }
+.bg:hover .del { opacity: 1; }
+.bg .del svg { width: 10px; height: 10px; }
+.stylebtn { width: 44px; height: 44px; border-radius: 10px; background: var(--soft) center / cover no-repeat; border: 2px solid transparent; }
+.stylebtn.on { border-color: #fff; }
+.row > .stylebtn { flex: none; }
+.check { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; flex: 1; }
+.check input { width: 15px; height: 15px; margin: 0; accent-color: #fff; cursor: pointer; }
+.pair { display: flex; gap: 10px; }
+.pair > .row { flex: 1; min-width: 0; gap: 4px; }
+.row.center { justify-content: center; gap: 22px; }
+.row.center .check { flex: none; }
+.pm { flex: none; width: 10px; text-align: center; font-size: 13px; color: var(--dim); }
+
+/* Settings / folder window: the pop-up fills its own transparent window; the top strip leaves room for tooltips. */
+body.panel { height: auto; overflow: hidden; }
+body.panel #hud { position: static; pointer-events: auto; }
+body.panel .modal { position: static; padding: 34px 12px 12px; animation: none; }

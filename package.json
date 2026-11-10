@@ -1,0 +1,23 @@
+{
+  "name": "musiccube",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MusicCube: a tiny floating cube music player",
+  "author": "madwind",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "start": "electron .",
+    "start:dev": "electron . --dev"
+  },
+  "devDependencies": {
+    "@types/three": "^0.187.0",
+    "electron": "^33.2.0",
+    "lucide": "^1.71.0",
+    "three": "^0.187.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}
