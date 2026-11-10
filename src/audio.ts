@@ -82,12 +82,10 @@ export function createPlayer(onState: () => void): Player {
   let yt: any = null, ytReady = false, ytPlaying = false, wantPlay = false, ytIdx = 0;
   let ytHost: HTMLElement | null = null;
 
-  let videoOnly = false; // set when the playlist id is rejected: play the single video instead
   async function startYt() {
     try {
       const YT = await loadYtApi();
-      const parsed = parseYouTube(ytUrl);
-      const pl = videoOnly ? undefined : parsed.list, video = parsed.video;
+      const { list: pl, video } = parseYouTube(ytUrl);
       ytHost = document.createElement("div");
       ytHost.style.cssText = "position:fixed;left:-400px;bottom:0;width:200px;height:200px;pointer-events:none"; // audio only
       const inner = document.createElement("div");
@@ -96,7 +94,7 @@ export function createPlayer(onState: () => void): Player {
       const host = ytHost;
       yt = new YT.Player(inner, {
         width: 200, height: 200,
-        ...(pl ? {} : { videoId: video }), // playlist mode must not pass videoId
+        ...(video ? { videoId: video } : {}),
         playerVars: { playsinline: 1, ...(pl ? { listType: "playlist", list: pl } : { loop: 1, playlist: video }) },
         events: {
           onReady: (e: any) => {
@@ -109,8 +107,7 @@ export function createPlayer(onState: () => void): Player {
             if (p.shuffle && n > 1) e.target.playVideoAt(Math.floor(Math.random() * n)); // do not always start at track 1
             else e.target.playVideo();
           },
-          onError: (e: any) => {
-            if (pl && e.data === 2 && video) { videoOnly = true; const w = wantPlay; destroyYt(); wantPlay = w; void startYt(); return; } // bad playlist id
+          onError: () => {
             yt?.nextVideo?.();
           }, // unplayable (embedding disabled) videos are skipped
           onStateChange: (e: any) => {
@@ -163,7 +160,6 @@ export function createPlayer(onState: () => void): Player {
       destroyYt();
       const youtube = urls.find(isYouTube);
       ytUrl = youtube ?? DEFAULT_TRACK;
-      videoOnly = false;
       list = youtube ? [] : urls;
       idx = -1;
       errors = 0;

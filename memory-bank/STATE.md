@@ -2,10 +2,10 @@
 
 ## Current Wave
 
-- **Wave:** 6
+- **Wave:** 7
 - **Status:** Ready
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** Native color picker restored with settled-input commit 2026-11-10
+- **Last Checkpoint:** Default YouTube playlist playback fixed 2026-11-10
 
 ## Wave History
 
@@ -17,6 +17,7 @@
 | 4 | 색상 선택 완료 시에만 질감 갱신 | Complete |
 | 5 | 기본곡 선택 후 음악 창 닫기 | Complete |
 | 6 | 기존 색상 선택창 유지 및 선택 중 지연 완화 | Complete |
+| 7 | 기본 YouTube 재생목록 전체 반복 복구 | Complete |
 
 ## Session Notes
 
