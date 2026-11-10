@@ -181,7 +181,7 @@ export function openSettings() {
     const picker = (key: "color" | "patternColor" | "iconColor", tip: string) => {
       const i = h("input");
       i.type = "color"; i.value = s[key];
-      i.oninput = () => {
+      i.onchange = () => {
         s[key] = i.value;
         if (key === "patternColor") s.manualPattern = true; // a hand-picked colour stays until auto contrast is switched on again
         else if (key === "iconColor") s.manualIcon = true;
