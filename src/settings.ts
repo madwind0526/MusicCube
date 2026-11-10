@@ -11,6 +11,8 @@ export interface Settings {
   relief: number;
   /** Visualizer: mode, line/bar thickness (px at size 1) and afterimage 0..1.5. */
   viz: "bars" | "wave" | "rings"; vizWidth: number; vizTrail: number;
+  /** Equalizer: 10 gains in -100..100 and the selected preset name. */
+  eq: number[]; eqPreset: string;
   size: number; opacity: number;
   onTop: boolean; floating: boolean; shuffle: boolean; repeat: "off" | "all" | "one"; folder: string;
   playlistFile: string; urls: string[]; sourceRevision: number;
@@ -21,8 +23,14 @@ const DEFAULTS: Settings = {
   color: "#8f7cff", patternColor: "#4b3fb0", iconColor: "#241d52",
   auto: true, manualPattern: false, manualIcon: false, userTex: [],
   texture: "plain", relief: 0.5, viz: "bars", vizWidth: 3, vizTrail: 0.4, size: 1, opacity: 1,
+  eq: Array(10).fill(0), eqPreset: "Flat",
   onTop: true, floating: true, shuffle: false, repeat: "all", folder: "", playlistFile: "", urls: [], sourceRevision: 0,
 };
+
+function normalizeEq(value: unknown): number[] {
+  if (!Array.isArray(value) || value.length !== 10) return Array(10).fill(0);
+  return value.map((v) => Number.isFinite(v) ? Math.max(-100, Math.min(100, v)) : 0);
+}
 
 function load(): Settings {
   let disk: string | null = null, local: string | null = null;
@@ -34,7 +42,10 @@ function load(): Settings {
       const value = JSON.parse(raw);
       if (!value || typeof value !== "object" || Array.isArray(value)) continue;
       if (raw === local && window.api) window.api.settingsSave(raw); // migrate settings saved before the shared file existed
-      return { ...DEFAULTS, ...value };
+      const settings: Settings = { ...DEFAULTS, ...value };
+      settings.eq = normalizeEq(settings.eq);
+      if (typeof settings.eqPreset !== "string") settings.eqPreset = "Flat";
+      return settings;
     } catch { /* try the other store */ }
   }
   return { ...DEFAULTS };

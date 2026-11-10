@@ -2,6 +2,6 @@
 
 ## Current Focus
 
-- Current: finish MusicCube local commit, then resolve GitHub remote, release, and Android target for the three-app request.
-- Verified: settings survived app restart and dev/production switch; UI flows, tests, build, local audio restriction, and loopback capture passed.
-- Blocked externally: MusicCube has no Git remote or Android project; adb currently lists no phone.
+- 10-band Paradise-style equalizer is implemented in MusicCube and confirmed working in the live app.
+- Verified: `npm test` 5/5 and `npm run build` pass; user tested panel controls and actual playback.
+- Remaining: commit/push the code and publish the built `v0.1.1` installer.

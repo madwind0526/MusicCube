@@ -93,6 +93,7 @@ ipcMain.on("move-by", (e, dx, dy) => { const w = BrowserWindow.fromWebContents(e
 // Settings / folder window: its own frameless window under the cube, so it can be moved on its own.
 let panel = null, panelKind = "";
 let onTop = true;
+let eqAvailable = false;
 ipcMain.on("open-panel", (_e, kind, anchorY) => {
   if (kind !== "settings" && kind !== "folder") return;
   if (panel && !panel.isDestroyed()) { const same = panelKind === kind; panel.close(); if (same) return; } // same button again = close
@@ -136,6 +137,17 @@ ipcMain.on("set-size", (_e, w, h, newCubeY) => {
   win.setBounds({ x, y, width: w, height: h });
 });
 ipcMain.on("quit", () => app.quit());
+ipcMain.on("eq-set", (e, gains, on) => {
+  const p = panel && !panel.isDestroyed() ? panel : null;
+  if (p && e.sender !== p.webContents) p.webContents.send("eq-set", gains, on);
+  if (win && !win.isDestroyed() && e.sender !== win.webContents) win.webContents.send("eq-set", gains, on);
+});
+ipcMain.on("eq-state", (e, available) => {
+  eqAvailable = !!available;
+  const p = panel && !panel.isDestroyed() ? panel : null;
+  if (p && e.sender !== p.webContents) p.webContents.send("eq-state", eqAvailable);
+});
+ipcMain.on("eq-query", (e) => { e.returnValue = eqAvailable; });
 
 app.whenReady().then(() => {
   // getDisplayMedia answers with the system's audio output (loopback), so the visualizer can analyse YouTube too.

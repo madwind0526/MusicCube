@@ -15,6 +15,11 @@ declare global {
       closePanel(): void;
       fitPanel(h: number): void;
       quit(): void;
+      eqSet(gains: number[], on: boolean): void;
+      eqState(available: boolean): void;
+      eqAvailable(): boolean;
+      onEqSet(fn: (gains: number[], on: boolean) => void): void;
+      onEqState(fn: (available: boolean) => void): void;
     };
   }
 }

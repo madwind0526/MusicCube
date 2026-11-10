@@ -14,4 +14,9 @@ contextBridge.exposeInMainWorld("api", {
   closePanel: () => ipcRenderer.send("close-panel"),
   fitPanel: (h) => ipcRenderer.send("fit-panel", h),
   quit: () => ipcRenderer.send("quit"),
+  eqSet: (gains, on) => ipcRenderer.send("eq-set", gains, on),
+  eqState: (available) => ipcRenderer.send("eq-state", available),
+  eqAvailable: () => ipcRenderer.sendSync("eq-query"),
+  onEqSet: (fn) => ipcRenderer.on("eq-set", (_e, gains, on) => fn(gains, on)),
+  onEqState: (fn) => ipcRenderer.on("eq-state", (_e, available) => fn(available)),
 });

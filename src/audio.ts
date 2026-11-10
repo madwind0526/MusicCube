@@ -4,16 +4,32 @@
 /** Played when no folder is chosen: same YouTube playlist as Paradise. */
 export const DEFAULT_TRACK = "https://www.youtube.com/watch?v=1t39vq3LdRs&list=PLCqwmfitbQCY";
 
+// Same bands, filter shape and scale as the Paradise equalizer.
+export const EQ_BANDS = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+export const EQ_LABELS = ["31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"];
+export const EQ_PRESETS: Record<string, number[]> = {
+  "Flat": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  "Bass Boost": [46, 33, 21, 8, 0, -4, -8, -8, -4, 0],
+  "Vocal Boost": [-17, -13, -4, 4, 13, 21, 25, 17, 4, -4],
+  "Treble Boost": [-8, -4, 0, 0, 4, 8, 21, 38, 50, 58],
+  "Loudness": [33, 21, 8, 0, -8, -13, -4, 8, 21, 29],
+  "Acoustic": [13, 17, 13, 4, 0, 4, 8, 13, 8, 4],
+};
+
 export interface Player {
   /** The analyser to read: the file's, or (YouTube) the one fed by the system's audio output. */
   readonly analyser: AnalyserNode;
   /** True when the current source cannot feed the analyser and the spectrum is faked. */
   readonly synthetic: boolean;
+  /** True when the current source can go through the Web Audio equalizer. */
+  readonly eqAvailable: boolean;
   readonly playing: boolean;
   /** Empty list = the default YouTube playlist. */
   setList(urls: string[], defaultWhenEmpty?: boolean): void;
   toggle(): void;
   next(): void;
+  /** gains: 10 values in -100..100, where +-100 is +-24 dB. */
+  setEq(gains: number[], on: boolean): void;
   shuffle: boolean;
   repeat: "off" | "all" | "one";
 }
@@ -49,7 +65,18 @@ export function createPlayer(onState: () => void): Player {
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 256;
   analyser.smoothingTimeConstant = 0.8;
-  ctx.createMediaElementSource(el).connect(analyser);
+  const eqFilters: BiquadFilterNode[] = [];
+  let node: AudioNode = ctx.createMediaElementSource(el);
+  for (const frequency of EQ_BANDS) {
+    const filter = ctx.createBiquadFilter();
+    filter.type = "peaking";
+    filter.frequency.value = frequency;
+    filter.Q.value = 1.4;
+    node.connect(filter);
+    node = filter;
+    eqFilters.push(filter);
+  }
+  node.connect(analyser);
   analyser.connect(ctx.destination);
 
   let list: string[] = [];
@@ -152,10 +179,13 @@ export function createPlayer(onState: () => void): Player {
 
   let shuffle = false;
   let repeat: Player["repeat"] = "all";
+  let eqGains = EQ_BANDS.map(() => 0);
+  let eqOn = true;
 
   const p: Player = {
     get analyser() { return useYt && loopAnalyser ? loopAnalyser : analyser; },
     get synthetic() { return useYt ? !loopAnalyser : idx >= 0 && active() === remote; },
+    get eqAvailable() { return !useYt && idx >= 0 && active() === el; },
     get playing() { return useYt ? ytPlaying : !active().paused; },
     get shuffle() { return shuffle; },
     set shuffle(v) { shuffle = v; if (ytReady) yt.setShuffle?.(v); },
@@ -190,6 +220,14 @@ export function createPlayer(onState: () => void): Player {
     next() {
       if (useYt) { if (ytReady) yt.nextVideo(); return; }
       if (list.length) load(shuffle ? Math.floor(Math.random() * list.length) : (idx + 1) % list.length);
+    },
+    setEq(gains, on) {
+      eqGains = EQ_BANDS.map((_, i) => {
+        const n = Number(gains[i]);
+        return Number.isFinite(n) ? Math.max(-100, Math.min(100, n)) : 0;
+      });
+      eqOn = on;
+      eqFilters.forEach((filter, i) => { filter.gain.value = on ? (eqGains[i] / 100) * 24 : 0; });
     },
   };
 

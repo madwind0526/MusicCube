@@ -10,6 +10,7 @@ const code = stripTypeScriptTypes(source).replace(/^export /gm, "") + "\nexports
 
 function setup() {
   const players = [];
+  const filters = [];
   const win = {};
   class Audio {
     paused = true;
@@ -21,6 +22,11 @@ function setup() {
     destination = {};
     createAnalyser() { return { connect() {} }; }
     createMediaElementSource() { return { connect() {} }; }
+    createBiquadFilter() {
+      const filter = { type: "", frequency: { value: 0 }, Q: { value: 0 }, gain: { value: 0 }, connect() {} };
+      filters.push(filter);
+      return filter;
+    }
     resume() { return Promise.resolve(); }
   }
   const element = () => ({ style: {}, append() {}, remove() {} });
@@ -39,7 +45,7 @@ function setup() {
     } };
     win.onYouTubeIframeAPIReady();
   };
-  return { player: exports.createPlayer(() => {}), players, resolveApi };
+  return { player: exports.createPlayer(() => {}), players, filters, resolveApi };
 }
 
 test("rapid play requests create one YouTube player", async () => {
@@ -68,4 +74,15 @@ test("empty selected folder does not start the default YouTube playlist", async 
   player.toggle();
   await new Promise(setImmediate);
   assert.equal(players.length, 0);
+});
+
+test("equalizer maps -100..100 to -24..24 dB and can be bypassed", () => {
+  const { player, filters } = setup();
+  assert.equal(filters.length, 10);
+  player.setEq([100, -100, 50, 0, 0, 0, 0, 0, 0, 0], true);
+  assert.equal(filters[0].gain.value, 24);
+  assert.equal(filters[1].gain.value, -24);
+  assert.equal(filters[2].gain.value, 12);
+  player.setEq([100, -100, 50, 0, 0, 0, 0, 0, 0, 0], false);
+  assert.ok(filters.every((filter) => filter.gain.value === 0));
 });

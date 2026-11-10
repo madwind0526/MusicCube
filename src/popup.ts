@@ -1,11 +1,18 @@
-import { Activity, ArrowUp, AudioLines, Brush, Check, Eye, Folder, FolderOpen, Ghost, ListMusic, Maximize2, Music, Plus, Power, Target, X } from "lucide";
+import { Activity, ArrowUp, AudioLines, Brush, Check, Eye, Folder, FolderOpen, Ghost, Info, ListMusic, Maximize2, Music, Plus, Power, SlidersVertical, Target, X } from "lucide";
 import type { IconNode } from "lucide";
 import { h, ic } from "./ui";
 import { s, save, saveSoon } from "./settings";
 import { MAX_USER_TEX, TEXTURES, compose, fileToTex } from "./textures";
 import { applyAuto } from "./autocolor";
 import { Concave } from "./icons";
-import { DEFAULT_TRACK } from "./audio";
+import { DEFAULT_TRACK, EQ_LABELS, EQ_PRESETS } from "./audio";
+
+const CUSTOM_EQ = "Custom";
+const EQ_PRESET_NAMES: Record<string, string> = {
+  Flat: "균형", "Bass Boost": "저음 강조", "Vocal Boost": "보컬 강조",
+  "Treble Boost": "고음 강조", Loudness: "음량 보정", Acoustic: "어쿠스틱",
+};
+const eqMatch = () => Object.entries(EQ_PRESETS).find(([, v]) => v.every((x, i) => x === s.eq[i]))?.[0] ?? CUSTOM_EQ;
 
 /** Wired up by main.ts: what the pop-ups need from the rest of the app. */
 export const hooks = {
@@ -177,6 +184,9 @@ function check(text: string, v: boolean, set: (b: boolean) => void) {
 /** Settings pop-up: colours, texture grid (7 built-in + up to 3 of the user's), relief, visualizer, size/opacity, two check boxes. */
 export function openSettings() {
   let pendingColors: (() => void)[] = [];
+  let eqNoteEl: HTMLElement | null = null;
+  let eqOn = window.api?.eqAvailable() ?? false;
+  window.api?.onEqState((available) => { eqOn = available; if (eqNoteEl) eqNoteEl.hidden = available; });
   const flushColors = () => pendingColors.forEach((commit) => commit());
   addEventListener("beforeunload", flushColors);
   openModal((render, close) => {
@@ -285,6 +295,44 @@ export function openSettings() {
     });
     const top = check("항상 위", s.onTop, (v) => { s.onTop = v; save(); hooks.onTop(v); });
 
+    // 10-band equalizer, matching Paradise's bands, presets and scale.
+    const eqSel = h("select");
+    eqSel.setAttribute("aria-label", "이퀄라이저 프리셋");
+    const eqBars: HTMLInputElement[] = [];
+    const eqNames = () => eqSel.replaceChildren(
+      ...(eqMatch() === CUSTOM_EQ ? [new Option("직접 설정", CUSTOM_EQ)] : []),
+      ...Object.keys(EQ_PRESETS).map((name) => new Option(EQ_PRESET_NAMES[name] ?? name, name)),
+    );
+    const eqRefresh = () => { eqNames(); eqSel.value = eqMatch(); };
+    const eqCommit = (saveNow: boolean) => {
+      s.eqPreset = eqMatch();
+      window.api?.eqSet(s.eq, true);
+      if (saveNow) save(); else saveSoon();
+      eqRefresh();
+    };
+    eqSel.onchange = () => {
+      const preset = EQ_PRESETS[eqSel.value];
+      if (!preset) return;
+      s.eq = [...preset];
+      eqCommit(true);
+      eqBars.forEach((bar, i) => { bar.value = String(s.eq[i]); });
+    };
+    const eqRow = h("div", "eq");
+    EQ_LABELS.forEach((name, i) => {
+      const bar = h("input");
+      bar.type = "range"; bar.min = "-100"; bar.max = "100"; bar.step = "1";
+      bar.value = String(s.eq[i]);
+      bar.setAttribute("aria-label", name + " Hz");
+      bar.oninput = () => { s.eq[i] = Number(bar.value); eqCommit(false); };
+      bar.onchange = () => save();
+      eqBars.push(bar);
+      eqRow.append(h("div", "eqbar", h("div", "vslide", bar), h("small", "", name)));
+    });
+    eqRefresh();
+    const eqNote = h("div", "note", ic(Info), "유튜브나 웹 주소로 재생하는 음악에는 적용되지 않습니다");
+    eqNote.hidden = eqOn;
+    eqNoteEl = eqNote;
+
     queueMicrotask(refresh);
     return [
       h("div", "row", picker("color", "배경색"), picker("patternColor", "무늬색"), picker("iconColor", "아이콘색"), h("span", "grow"), tb(Power, "종료", () => hooks.quit(), "icon"), tb(X, "닫기", close, "icon")),
@@ -294,6 +342,9 @@ export function openSettings() {
       h("div", "pair", range(Brush, "두께", 1, 40, 0.5, s.vizWidth, (n) => { s.vizWidth = n; }), range(Ghost, "잔상", 0, 1.5, 0.01, s.vizTrail, (n) => { s.vizTrail = n; })),
       h("div", "pair", range(Maximize2, "크기", 0.5, 1.8, 0.05, s.size, (n) => { s.size = n; hooks.size(); }, () => hooks.sizeCommit()), range(Eye, "투명도", 0, 1, 0.01, s.opacity, (n) => { s.opacity = n; hooks.look(); })),
       h("div", "row center", auto, top),
+      h("div", "row", ic(SlidersVertical), eqSel),
+      eqRow,
+      eqNote,
     ];
-  }, () => { flushColors(); removeEventListener("beforeunload", flushColors); save(); });
+  }, () => { flushColors(); removeEventListener("beforeunload", flushColors); eqNoteEl = null; save(); });
 }

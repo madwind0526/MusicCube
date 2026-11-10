@@ -30,11 +30,20 @@ cube.mesh.quaternion.setFromEuler(new THREE.Euler(0.5, -0.6, 0));
 const player = createPlayer(refreshIcons);
 player.shuffle = s.shuffle;
 player.repeat = s.repeat;
+player.setEq(s.eq, true);
+window.api?.onEqSet((gains, on) => player.setEq(gains, on));
 const analyserData = new Uint8Array(128);
 const viz = createVisualizer(document.getElementById("viz") as HTMLCanvasElement, (d, now) => {
   if (player.synthetic) fakeSpectrum(d, now);
   else { player.analyser.getByteFrequencyData(analyserData); d.set(analyserData); }
 });
+
+let eqAvailable = false;
+function syncEqState() {
+  if (player.eqAvailable === eqAvailable) return;
+  eqAvailable = player.eqAvailable;
+  window.api?.eqState(eqAvailable);
+}
 
 function refreshIcons() {
   cube.setIcon("play", player.playing ? Pause : Play);
@@ -43,6 +52,7 @@ function refreshIcons() {
   cube.setIcon("folder", FolderOpen);
   cube.setIcon("settings", Cog);
   cube.setIcon("hold", s.floating ? Wind : Anchor);
+  syncEqState();
 }
 
 const ACTIONS = {
@@ -83,14 +93,15 @@ async function applySource(play = false) {
   const urls = s.folder ? await window.api?.scan(s.folder) : s.playlistFile ? await window.api?.readPlaylist(s.playlistFile) : s.urls;
   if (version === sourceVersion) { player.setList(urls ?? [], !selected); if (play && (!selected || !!urls?.length)) player.toggle(); }
 }
-let seen = { size: s.size, source: source(), onTop: s.onTop, opacity: s.opacity, surface: surface() };
+let seen = { size: s.size, source: source(), onTop: s.onTop, opacity: s.opacity, surface: surface(), eq: JSON.stringify(s.eq) };
 onExternalChange(() => {
   if (s.opacity !== seen.opacity) cube.applyLook();
   if (surface() !== seen.surface) cube.applyTexture();
+  if (JSON.stringify(s.eq) !== seen.eq) player.setEq(s.eq, true);
   if (s.size !== seen.size) { layoutWindow(); resize(); }
   if (s.onTop !== seen.onTop) window.api?.setOnTop(s.onTop);
   if (source() !== seen.source) void applySource(true);
-  seen = { size: s.size, source: source(), onTop: s.onTop, opacity: s.opacity, surface: surface() };
+  seen = { size: s.size, source: source(), onTop: s.onTop, opacity: s.opacity, surface: surface(), eq: JSON.stringify(s.eq) };
 });
 
 // ---- pointer: drag rotates the cube, a click presses a face, right-drag on the cube moves the window ----
