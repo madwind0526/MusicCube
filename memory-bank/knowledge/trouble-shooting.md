@@ -36,7 +36,7 @@ The three native color inputs originally used `oninput`, so intermediate picker 
 The button saved the selected URL but only updated fields inside the open popup. Call the existing modal `close()` after saving. The panel's `hooks.modal(false)` then requests that Electron close the standalone window.
 
 ## YouTube IFrame playlist needs the watch video's ID (2026-11-10)
-The `PLCqwmfitbQCY` playlist is valid on YouTube. With this default watch URL, an IFrame created with `list` but no `videoId` returns error 2 and loads no playlist. Passing `v=1t39vq3LdRs` as `videoId` alongside the same `list` loaded 163 tracks in a live IFrame test. Do not treat error 2 alone as proof that the playlist ID is invalid or fall back to a single looping video. Paradise and Voyager currently construct the same playlist-only embed and may need the same change.
+The `PLCqwmfitbQCY` playlist is valid on YouTube. An IFrame created with only `list` loaded 163 tracks in one Paradise session but returned error 2 (`api.invalidparam`) with no playlist in another. In that same failed session, passing `v=1t39vq3LdRs` as `videoId` alongside the same `list` loaded and played 163 tracks. The server was down for both the successful and failed list-only runs, so server availability does not explain the difference. Do not treat error 2 alone as proof that the playlist ID is invalid or fall back to a single looping video. MusicCube passes both values; Paradise and Voyager currently omit the video ID in playlist mode.
 
 ## Camera zoom for fixed pixel size (2026-11-10)
 With a resizable window, zoom = targetPx / windowHeightPx (not the inverse), plus setViewOffset to keep the cube at a fixed pixel position.

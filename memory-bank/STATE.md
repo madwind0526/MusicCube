@@ -2,10 +2,10 @@
 
 ## Current Wave
 
-- **Wave:** 7
+- **Wave:** 8
 - **Status:** Ready
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** Default YouTube playlist playback fixed 2026-11-10
+- **Last Checkpoint:** Paradise playlist embed behavior rechecked 2026-11-10
 
 ## Wave History
 
@@ -18,6 +18,7 @@
 | 5 | 기본곡 선택 후 음악 창 닫기 | Complete |
 | 6 | 기존 색상 선택창 유지 및 선택 중 지연 완화 | Complete |
 | 7 | 기본 YouTube 재생목록 전체 반복 복구 | Complete |
+| 8 | Paradise YouTube 재생 결과 재검증 및 문제 기록 정정 | Complete |
 
 ## Session Notes
 
