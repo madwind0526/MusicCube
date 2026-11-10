@@ -180,12 +180,19 @@ export function openSettings() {
     const picker = (key: "color" | "patternColor" | "iconColor", tip: string) => {
       const i = h("input");
       i.type = "color"; i.value = s[key];
-      i.onchange = () => {
+      let pending = 0, applied = "";
+      const commit = () => {
+        clearTimeout(pending);
+        if (applied === i.value) return;
+        applied = i.value;
         s[key] = i.value;
         if (key === "patternColor") s.manualPattern = true; // a hand-picked colour stays until auto contrast is switched on again
         else if (key === "iconColor") s.manualIcon = true;
         changed();
       };
+      // The native chooser does not expose pointerup; commit after its input events settle.
+      i.oninput = () => { clearTimeout(pending); pending = window.setTimeout(commit, 100); };
+      i.onchange = commit;
       pickers.push([i, key]);
       return tipped(i, tip);
     };
