@@ -96,8 +96,8 @@ ipcMain.on("fit-panel", (e, h) => {
   const w = BrowserWindow.fromWebContents(e.sender);
   const b = w.getBounds();
   const wa = screen.getDisplayMatching(b).workArea;
-  h = Math.round(h);
-  w.setBounds({ x: b.x, y: Math.min(b.y, wa.y + wa.height - h), width: b.width, height: h });
+  h = Math.min(Math.round(h), wa.height);
+  w.setBounds({ x: b.x, y: Math.max(wa.y, Math.min(b.y, wa.y + wa.height - h)), width: b.width, height: h });
 });
 ipcMain.on("on-top", (_e, v) => win.setAlwaysOnTop(!!v));
 ipcMain.on("ignore", (_e, v) => win.setIgnoreMouseEvents(!!v, { forward: true }));

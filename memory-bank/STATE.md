@@ -2,10 +2,10 @@
 
 ## Current Wave
 
-- **Wave:** 2
+- **Wave:** 3
 - **Status:** Ready
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** Music source selection restored and verified 2026-11-10
+- **Last Checkpoint:** Music panel sizing, default song control, and longer trail verified 2026-11-10
 
 ## Wave History
 
@@ -13,6 +13,7 @@
 |------|-----------|------|
 | 1 | 프로젝트 초기화 | Complete |
 | 2 | 음악 선택 화면과 재생 소스 연결 | Complete |
+| 3 | 음악 선택 창 크기 및 기본곡 버튼, 잔상 범위 수정 | Complete |
 
 ## Session Notes
 

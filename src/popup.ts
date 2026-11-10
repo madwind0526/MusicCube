@@ -5,11 +5,12 @@ import { s, save } from "./settings";
 import { MAX_USER_TEX, TEXTURES, compose, fileToTex } from "./textures";
 import { applyAuto } from "./autocolor";
 import { Concave } from "./icons";
+import { DEFAULT_TRACK } from "./audio";
 
 /** Wired up by main.ts: what the pop-ups need from the rest of the app. */
 export const hooks = {
   look: () => {}, texture: () => {}, size: () => {}, sizeCommit: () => {},
-  onTop: (_v: boolean) => {}, quit: () => {}, modal: (_open: boolean) => {},
+  onTop: (_v: boolean) => {}, quit: () => {}, modal: (_open: boolean) => {}, fit: () => {},
 };
 
 const hud = document.getElementById("hud")!;
@@ -28,7 +29,7 @@ const label = (icon: IconNode, tip: string) => { const e = h("span", "lab", ic(i
 
 function openModal(build: (render: () => void, close: () => void) => (Node | string)[], onClose?: () => void) {
   const back = h("div", "modal");
-  const close = () => { back.remove(); removeEventListener("keydown", onKey); onClose?.(); hooks.modal(--depth > 0); };
+  const close = () => { back.remove(); removeEventListener("keydown", onKey); onClose?.(); hooks.modal(--depth > 0); if (depth) hooks.fit(); };
   const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && hud.lastElementChild === back) close(); };
   back.onclick = (e) => { if (e.target === back) close(); };
   addEventListener("keydown", onKey);
@@ -46,7 +47,7 @@ function openModal(build: (render: () => void, close: () => void) => (Node | str
     drag = { x: e.screenX, y: e.screenY };
   });
   back.addEventListener("pointerup", () => { drag = null; });
-  const render = () => back.replaceChildren(h("div", "pop", ...build(render, close)));
+  const render = () => { back.replaceChildren(h("div", "pop", ...build(render, close))); hooks.fit(); };
   hud.append(back);
   hooks.modal(++depth > 0);
   render();
@@ -94,7 +95,7 @@ export function openMusicSource() {
   openModal((_render, close) => {
     const src = h("input", "source-input");
     src.type = "text";
-    src.placeholder = "https:// 음악 주소 입력";
+    src.placeholder = "https:// URL input";
     src.setAttribute("aria-label", "음악 URL 입력");
     src.spellcheck = false;
     const shown = () => s.folder || s.playlistFile || s.urls.join(" ");
@@ -128,10 +129,19 @@ export function openMusicSource() {
       b.onclick = () => pick(kind);
       return b;
     };
+    const defaultSong = h("button", "default-song", "Default Song");
+    defaultSong.onclick = () => {
+      s.folder = s.playlistFile = "";
+      s.urls = [DEFAULT_TRACK];
+      s.sourceRevision++;
+      save();
+      src.value = shown();
+      error.textContent = "";
+    };
     return [
-      h("div", "row", h("div", "poptitle", "음악 선택"), h("span", "grow"), tb(X, "닫기", close, "icon")),
+      h("div", "row source-head", h("div", "poptitle", "Music Selection"), h("span", "grow"), defaultSong, tb(X, "닫기", close, "icon")),
       src, error,
-      h("div", "srcbtns", button("폴더", FolderOpen, "folder"), button("재생목록", ListMusic, "list")),
+      h("div", "srcbtns", button("Folder", FolderOpen, "folder"), button("Playlist", ListMusic, "list")),
     ];
   });
 }
@@ -250,7 +260,7 @@ export function openSettings() {
       grid,
       relief,
       modes,
-      h("div", "pair", range(Brush, "두께", 1, 40, 0.5, s.vizWidth, (n) => { s.vizWidth = n; }), range(Ghost, "잔상", 0, 1, 0.01, s.vizTrail, (n) => { s.vizTrail = n; })),
+      h("div", "pair", range(Brush, "두께", 1, 40, 0.5, s.vizWidth, (n) => { s.vizWidth = n; }), range(Ghost, "잔상", 0, 1.5, 0.01, s.vizTrail, (n) => { s.vizTrail = n; })),
       h("div", "pair", range(Maximize2, "크기", 0.5, 1.8, 0.05, s.size, (n) => { s.size = n; hooks.size(); }, () => hooks.sizeCommit()), range(Eye, "투명도", 0, 1, 0.01, s.opacity, (n) => { s.opacity = n; hooks.look(); })),
       h("div", "row center", auto, top),
     ];

@@ -8,8 +8,23 @@ const kind = new URLSearchParams(location.search).get("kind");
 hooks.modal = (open) => { if (!open) api?.closePanel(); };
 hooks.quit = () => api?.quit();
 
+const hud = document.getElementById("hud")!;
+let fitFrame = 0;
+const fit = () => {
+  cancelAnimationFrame(fitFrame);
+  fitFrame = requestAnimationFrame(() => {
+    const pop = hud.querySelector<HTMLElement>(".modal:not([hidden]) .pop");
+    if (!pop) return;
+    pop.style.maxHeight = "none";
+    const height = hud.offsetHeight;
+    pop.style.maxHeight = "";
+    api?.fitPanel(height);
+  });
+};
+hooks.fit = fit;
+
 if (kind === "folder") openMusicSource();
 else openSettings();
 
 // Fit the window to the pop-up (plus the strip on top that tooltips need).
-new ResizeObserver(() => api?.fitPanel(document.getElementById("hud")!.offsetHeight)).observe(document.getElementById("hud")!);
+new ResizeObserver(fit).observe(hud);

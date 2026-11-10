@@ -74,12 +74,12 @@ function resize() {
 window.addEventListener("resize", resize);
 
 // The settings/folder window saves into localStorage; this window follows.
-const source = () => JSON.stringify([s.folder, s.playlistFile, s.urls]);
+const source = () => JSON.stringify([s.folder, s.playlistFile, s.urls, s.sourceRevision]);
 let sourceVersion = 0;
-async function applySource() {
+async function applySource(play = false) {
   const version = ++sourceVersion;
   const urls = s.folder ? await window.api?.scan(s.folder) : s.playlistFile ? await window.api?.readPlaylist(s.playlistFile) : s.urls;
-  if (version === sourceVersion) player.setList(urls ?? []);
+  if (version === sourceVersion) { player.setList(urls ?? []); if (play) player.toggle(); }
 }
 let seen = { size: s.size, source: source(), onTop: s.onTop };
 onExternalChange(() => {
@@ -87,7 +87,7 @@ onExternalChange(() => {
   cube.applyTexture();
   if (s.size !== seen.size) { layoutWindow(); resize(); }
   if (s.onTop !== seen.onTop) window.api?.setOnTop(s.onTop);
-  if (source() !== seen.source) void applySource();
+  if (source() !== seen.source) void applySource(true);
   seen = { size: s.size, source: source(), onTop: s.onTop };
 });
 

@@ -22,7 +22,7 @@ button:active { transform: scale(0.94); }
 .row > button.icon.on, .row > button.icon.ok { background: rgba(255, 255, 255, 0.35); }
 .lab { flex: none; width: 28px; height: 28px; display: grid; place-items: center; color: var(--dim); }
 .empty { color: var(--dim); text-align: center; padding: 14px; }
-.list { display: flex; flex-direction: column; gap: 4px; max-height: 190px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.3) transparent; }
+.list { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.3) transparent; }
 .item { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 12px; background: var(--soft); font-size: 13px; }
 .item.click { cursor: pointer; }
 .item.click:hover { background: rgba(255, 255, 255, 0.24); }
@@ -32,13 +32,16 @@ button:active { transform: scale(0.94); }
 .item .t span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pathbar { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 10px; background: var(--soft); font-size: 11px; direction: rtl; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .poptitle { font-size: 15px; font-weight: 600; }
+.source-head { flex-wrap: wrap; }
+.default-song { flex: none; padding: 7px 9px; border-radius: 10px; background: var(--soft); font-size: 11px; white-space: nowrap; }
+.default-song:hover { background: rgba(255,255,255,0.25); }
 .source-input { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid rgba(255,255,255,0.25); border-radius: 10px; outline: none; background: var(--soft); color: var(--fg); font: inherit; font-size: 13px; }
 .source-input:focus { border-color: var(--fg); }
 .source-input::placeholder { color: var(--dim); }
 .source-error { color: #ffb4b4; font-size: 12px; }
 .source-error:empty { display: none; }
-.srcbtns { display: flex; gap: 8px; }
-.srcbtn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; border-radius: 12px; background: var(--soft); font-size: 13px; }
+.srcbtns { display: flex; flex-wrap: wrap; gap: 8px; }
+.srcbtn { flex: 1 1 110px; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; border-radius: 12px; background: var(--soft); font-size: 13px; }
 .srcbtn:hover { background: rgba(255,255,255,0.25); }
 
 /* Surface textures as small pictures */

@@ -26,6 +26,9 @@
 ## Nested music source explorer in the Electron panel (2026-11-10)
 The source popup and folder explorer both use `.modal` in a standalone panel where modals flow vertically. Opening the explorer without hiding the source popup stacks two panels and stretches the window. Hide the source popup while the explorer is open, then restore it when the explorer closes, including Escape and cancel.
 
+## Explorer panel stays short after opening (2026-11-10)
+When `.pop` has `max-height: calc(100vh - 46px)`, measuring the visible `#hud` height returns the old short window height. A `ResizeObserver` on `#hud` cannot grow the panel because the constrained height does not change. On popup render and close, temporarily remove `.pop`'s max-height, measure `#hud.offsetHeight`, restore the max-height, and send the natural height to the Electron window. Clamp the window to the display work area; the popup still scrolls on genuinely small screens.
+
 ## Paradise DEFAULT_TRACK playlist id is rejected by YouTube (error 2)
 `list=PLCqwmfitbQCY` is too short; audio.ts falls back to the single video `1t39vq3LdRs`.
 

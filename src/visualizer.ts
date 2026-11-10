@@ -81,9 +81,9 @@ export function createVisualizer(canvas: HTMLCanvasElement, fill: (d: Uint8Array
     const w = canvas.width / (window.devicePixelRatio || 1), h = canvas.height / (window.devicePixelRatio || 1);
     if (!playing) { g.clearRect(0, 0, w, h); history = []; return; }
     fill(data, now);
-    // Afterimage: instead of clearing, fade what is already there (trail 0 = clear every frame; at 1 about 97.5% stays per frame, a longer tail; going lower leaves 8-bit alpha residue).
+    // Above 1, reduce fading to extend the old maximum trail by up to 1.5 times.
     g.globalCompositeOperation = "destination-out";
-    g.fillStyle = `rgba(0,0,0,${1 - s.vizTrail * 0.975})`;
+    g.fillStyle = `rgba(0,0,0,${s.vizTrail <= 1 ? 1 - s.vizTrail * 0.975 : 0.025 / s.vizTrail})`;
     g.fillRect(0, 0, w, h);
     g.globalCompositeOperation = "source-over";
     if (s.viz === "bars") bars(data);
