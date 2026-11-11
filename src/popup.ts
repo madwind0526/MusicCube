@@ -337,7 +337,7 @@ export function openSettings() {
 
     queueMicrotask(refresh);
     return [
-      h("div", "row", picker("color", "배경색"), picker("patternColor", "무늬색"), picker("iconColor", "아이콘색"), h("span", "grow"), tb(Power, "종료", () => hooks.quit(), "icon"), tb(X, "닫기", close, "icon")),
+      h("div", "row", picker("color", "Background color"), picker("patternColor", "Pattern color"), picker("iconColor", "Icon color"), h("span", "grow"), tb(Power, "종료", () => hooks.quit(), "icon"), tb(X, "닫기", close, "icon")),
       grid,
       relief,
       modes,

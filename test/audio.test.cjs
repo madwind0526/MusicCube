@@ -8,13 +8,14 @@ const vm = require("node:vm");
 const source = fs.readFileSync(path.join(__dirname, "../src/audio.ts"), "utf8").replaceAll("import.meta.env.DEV", "false");
 const code = stripTypeScriptTypes(source).replace(/^export /gm, "") + "\nexports.createPlayer = createPlayer;";
 
-function setup() {
+function setup(getDisplayMedia = async () => { throw new Error("capture disabled"); }) {
   const players = [];
   const filters = [];
   const win = {};
   class Audio {
     paused = true;
     pause() { this.paused = true; }
+    play() { this.paused = false; return Promise.resolve(); }
     removeAttribute() {}
     addEventListener() {}
   }
@@ -22,6 +23,7 @@ function setup() {
     destination = {};
     createAnalyser() { return { connect() {} }; }
     createMediaElementSource() { return { connect() {} }; }
+    createMediaStreamSource() { return { connect() {} }; }
     createBiquadFilter() {
       const filter = { type: "", frequency: { value: 0 }, Q: { value: 0 }, gain: { value: 0 }, connect() {} };
       filters.push(filter);
@@ -32,9 +34,9 @@ function setup() {
   const element = () => ({ style: {}, append() {}, remove() {} });
   const exports = {};
   vm.runInNewContext(code, {
-    exports, Audio, AudioContext, URL,
+    exports, Audio, AudioContext, URL, MediaStream: class { constructor(tracks) { this.tracks = tracks; } getTracks() { return this.tracks; } },
     window: win,
-    navigator: { mediaDevices: { getDisplayMedia: async () => { throw new Error("capture disabled"); } } },
+    navigator: { mediaDevices: { getDisplayMedia } },
     document: { createElement: element, head: { append() {} }, body: { append() {} } },
     console: { warn() {} },
   });
@@ -85,4 +87,30 @@ test("equalizer maps -100..100 to -24..24 dB and can be bypassed", () => {
   assert.equal(filters[2].gain.value, 12);
   player.setEq([100, -100, 50, 0, 0, 0, 0, 0, 0, 0], false);
   assert.ok(filters.every((filter) => filter.gain.value === 0));
+});
+
+test("a list that mixes files and YouTube links plays the files", async () => {
+  const { player, players } = setup();
+  player.setList(["mcfile://local/a.mp3", "https://www.youtube.com/watch?v=3B10BV4VlCM", "https://example.com/b.mp3"]);
+  player.toggle();
+  await new Promise(setImmediate);
+  assert.equal(players.length, 0, "no YouTube player for a mixed list");
+  assert.equal(player.playing, true);
+  assert.equal(player.eqAvailable, true, "the local file is the one playing");
+});
+
+test("a failed system-audio capture is retried, and the capture is released when YouTube is left", async () => {
+  let calls = 0, stopped = false;
+  const track = { stop() { stopped = true; }, addEventListener() {} };
+  const stream = { getVideoTracks: () => [], getAudioTracks: () => [track], getTracks: () => [track] };
+  const { player } = setup(async () => { if (++calls === 1) throw new Error("device busy"); return stream; });
+  player.toggle();                    // first attempt fails
+  await new Promise(setImmediate);
+  assert.equal(player.synthetic, true, "fake spectrum while the capture is missing");
+  player.toggle();                    // the next play tries again
+  await new Promise(setImmediate);
+  assert.equal(calls, 2);
+  assert.equal(player.synthetic, false, "real spectrum once the capture works");
+  player.setList(["mcfile://local/a.mp3"]); // a local file does not need the system audio
+  assert.equal(stopped, true, "the capture tracks are stopped");
 });

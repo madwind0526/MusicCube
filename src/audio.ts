@@ -90,21 +90,33 @@ export function createPlayer(onState: () => void): Player {
   // ---- YouTube backend ----
   // The IFrame player's sound cannot be tapped, so capture the system's audio output (Electron loopback) and analyse that.
   let loopAnalyser: AnalyserNode | null = null;
+  let loopStream: MediaStream | null = null;
   let loopTried = false;
+  /** Stops the capture (it costs CPU) and allows a new attempt the next time YouTube plays. */
+  function stopLoopback() {
+    loopStream?.getTracks().forEach((t) => t.stop());
+    loopStream = null;
+    loopAnalyser = null;
+    loopTried = false;
+  }
   async function startLoopback() {
     if (loopTried) return;
     loopTried = true;
     try {
       const st = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       st.getVideoTracks().forEach((t) => t.stop()); // only the sound is wanted
-      if (!st.getAudioTracks().length) return;
+      const audio = st.getAudioTracks();
+      if (!audio.length) { loopTried = false; return; }
       const an = ctx.createAnalyser();
       an.fftSize = 4096;
       an.smoothingTimeConstant = 0;
-      ctx.createMediaStreamSource(new MediaStream(st.getAudioTracks())).connect(an); // not to the speakers: it would echo
+      loopStream = new MediaStream(audio);
+      ctx.createMediaStreamSource(loopStream).connect(an); // not to the speakers: it would echo
+      audio[0].addEventListener("ended", stopLoopback); // the system ended the capture: fall back, and try again later
       loopAnalyser = an;
     } catch (e) {
-      console.warn("loopback capture failed", e); // keeps the fake spectrum
+      loopTried = false; // a temporary failure must not freeze the fake spectrum until the app restarts
+      console.warn("loopback capture failed", e); // keeps the fake spectrum for now
     }
   }
 
@@ -200,11 +212,15 @@ export function createPlayer(onState: () => void): Player {
       remote.removeAttribute("src");
       destroyYt();
       const youtube = urls.find(isYouTube);
+      const rest = urls.filter((u) => !isYouTube(u));
+      // The two players cannot be chained, so a list that mixes playable entries with YouTube links plays the
+      // playable ones; the YouTube player is used when the list holds YouTube links only.
       ytUrl = youtube ?? DEFAULT_TRACK;
-      list = youtube ? [] : urls;
+      list = rest;
       idx = -1;
       errors = 0;
-      useYt = !!youtube || (urls.length === 0 && defaultWhenEmpty);
+      useYt = (!!youtube && rest.length === 0) || (urls.length === 0 && defaultWhenEmpty);
+      if (!useYt) stopLoopback(); // nothing needs the system audio any more
       onState();
     },
     toggle() {

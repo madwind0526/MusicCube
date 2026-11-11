@@ -49,7 +49,7 @@ The six faces:
 
 - **Folder**: every audio file below it plays (`mp3 flac wav ogg oga opus m4a aac webm`, up to 5000 files).
 - **Playlist**: an `.m3u`, `.m3u8` or `.pls` file with local paths or web links.
-- **URL**: paste YouTube or direct audio links.
+- **URL**: paste YouTube or direct audio links. A list that mixes YouTube links with other entries plays the other entries and skips the YouTube links (the two players cannot be chained); a list of YouTube links alone goes to the YouTube player.
 - **Default Song**: goes back to the built-in YouTube song.
 
 ### Where the spectrum comes from
