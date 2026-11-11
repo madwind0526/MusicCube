@@ -1,4 +1,4 @@
-import { Activity, ArrowUp, AudioLines, Brush, Check, Eye, Folder, FolderOpen, Ghost, Info, ListMusic, Maximize2, Music, Plus, Power, SlidersVertical, Target, X } from "lucide";
+import { Activity, ArrowUp, AudioLines, Brush, Check, Eye, Folder, FolderOpen, Ghost, Info, ListMusic, Maximize2, Music, Plus, Power, SlidersVertical, Target, Waves, X } from "lucide";
 import type { IconNode } from "lucide";
 import { h, ic } from "./ui";
 import { s, save, saveSoon } from "./settings";
@@ -276,7 +276,7 @@ export function openSettings() {
 
     // ---- visualizer mode ----
     const modes = h("div", "row", label(Activity, "시각화"));
-    for (const [id, icon, name] of [["bars", AudioLines, "막대"], ["wave", Activity, "파형"], ["rings", Target, "고리 (SongYUE2)"]] as const) {
+    for (const [id, icon, name] of [["bars", AudioLines, "막대"], ["wave", Activity, "파형"], ["rings", Target, "고리 (SongYUE2)"], ["ocean", Waves, "파도"]] as const) {
       const b = tb(icon, name, () => { s.viz = id; save(); render(); }, "icon");
       b.classList.toggle("on", s.viz === id);
       modes.append(b);
@@ -288,12 +288,14 @@ export function openSettings() {
     slider.before(h("span", "pm", "−"));
     slider.after(h("span", "pm", "+"));
 
-    const auto = check("자동 대비", s.auto, (v) => {
+    const auto = check("Auto contrast", s.auto, (v) => {
       s.auto = v;
       if (v) { s.manualPattern = s.manualIcon = false; applyAuto(); }
       changed();
     });
-    const top = check("항상 위", s.onTop, (v) => { s.onTop = v; save(); hooks.onTop(v); });
+    const top = check("Always on top", s.onTop, (v) => { s.onTop = v; save(); hooks.onTop(v); });
+    const floating = check("Floating", s.floating, (v) => { s.floating = v; save(); });
+    const cava = check("Cava spectrum", s.cava, (v) => { s.cava = v; save(); });
 
     // 10-band equalizer, matching Paradise's bands, presets and scale.
     const eqSel = h("select");
@@ -341,7 +343,7 @@ export function openSettings() {
       modes,
       h("div", "pair", range(Brush, "두께", 1, 40, 0.5, s.vizWidth, (n) => { s.vizWidth = n; }), range(Ghost, "잔상", 0, 1.5, 0.01, s.vizTrail, (n) => { s.vizTrail = n; })),
       h("div", "pair", range(Maximize2, "크기", 0.5, 1.8, 0.05, s.size, (n) => { s.size = n; hooks.size(); }, () => hooks.sizeCommit()), range(Eye, "투명도", 0, 1, 0.01, s.opacity, (n) => { s.opacity = n; hooks.look(); })),
-      h("div", "row center", auto, top),
+      h("div", "row center", auto, top, floating, cava),
       h("div", "row", ic(SlidersVertical), eqSel),
       eqRow,
       eqNote,

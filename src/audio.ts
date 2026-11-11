@@ -1,8 +1,10 @@
 // Local audio feeds the analyser; remote audio plays directly, and YouTube uses an IFrame player.
 // Sources outside Web Audio use a synthetic spectrum when loopback capture is unavailable.
 
-/** Played when no folder is chosen: same YouTube playlist as Paradise. */
-export const DEFAULT_TRACK = "https://www.youtube.com/watch?v=1t39vq3LdRs&list=PLCqwmfitbQCY";
+/** Earlier defaults: a saved list that is exactly one of these is moved to the current default. */
+export const LEGACY_DEFAULT_TRACKS = ["https://www.youtube.com/watch?v=1t39vq3LdRs&list=PLCqwmfitbQCY"];
+/** Played when no folder is chosen. */
+export const DEFAULT_TRACK = "https://www.youtube.com/watch?v=uWqX8rsyZ0c&list=PLIwNCVd3ii5U";
 
 // Same bands, filter shape and scale as the Paradise equalizer.
 export const EQ_BANDS = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
@@ -63,8 +65,8 @@ export function createPlayer(onState: () => void): Player {
   el.crossOrigin = "anonymous"; // mcfile:// answers with CORS headers, so the analyser can read it
   const ctx = new AudioContext();
   const analyser = ctx.createAnalyser();
-  analyser.fftSize = 256;
-  analyser.smoothingTimeConstant = 0.8;
+  analyser.fftSize = 4096; // 2048 bins (~12 Hz each): enough resolution for the bass; spectrum.ts does the smoothing
+  analyser.smoothingTimeConstant = 0;
   const eqFilters: BiquadFilterNode[] = [];
   let node: AudioNode = ctx.createMediaElementSource(el);
   for (const frequency of EQ_BANDS) {
@@ -97,8 +99,8 @@ export function createPlayer(onState: () => void): Player {
       st.getVideoTracks().forEach((t) => t.stop()); // only the sound is wanted
       if (!st.getAudioTracks().length) return;
       const an = ctx.createAnalyser();
-      an.fftSize = 256;
-      an.smoothingTimeConstant = 0.8;
+      an.fftSize = 4096;
+      an.smoothingTimeConstant = 0;
       ctx.createMediaStreamSource(new MediaStream(st.getAudioTracks())).connect(an); // not to the speakers: it would echo
       loopAnalyser = an;
     } catch (e) {

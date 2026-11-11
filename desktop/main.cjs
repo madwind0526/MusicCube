@@ -20,15 +20,38 @@ protocol.registerSchemesAsPrivileged([
 
 if (!app.requestSingleInstanceLock()) { app.quit(); return; }
 
+// The cube window's last position is kept as the cube's centre (the window size changes with the size setting).
+const posFile = path.join(app.getPath("userData"), "window.json");
+function loadPos() {
+  try {
+    const p = JSON.parse(fs.readFileSync(posFile, "utf8"));
+    const onScreen = screen.getAllDisplays().some(({ workArea: a }) => p.cx >= a.x && p.cx < a.x + a.width && p.cy >= a.y && p.cy < a.y + a.height);
+    return Number.isFinite(p.cx) && Number.isFinite(p.cy) && onScreen ? p : null; // ignore a spot on a monitor that is gone
+  } catch { return null; }
+}
+let posTimer = 0;
+function savePos() {
+  if (!win || win.isDestroyed()) return;
+  const b = win.getBounds();
+  try {
+    fs.writeFileSync(posFile + ".tmp", JSON.stringify({ cx: b.x + b.width / 2, cy: b.y + cubeY }));
+    fs.renameSync(posFile + ".tmp", posFile);
+  } catch { /* the position is a convenience: losing it must not break the app */ }
+}
+
 let win;
 function createWindow() {
   const wa = screen.getPrimaryDisplay().workArea;
+  const saved = loadPos();
   win = new BrowserWindow({
-    width: 560, height: 560, x: wa.x + wa.width - 600, y: wa.y + 20,
+    width: 560, height: 560,
+    x: saved ? Math.round(saved.cx - 280) : wa.x + wa.width - 600, y: saved ? Math.round(saved.cy - 280) : wa.y + 20,
     title: "MusicCube", frame: false, transparent: true, hasShadow: false, resizable: false,
     skipTaskbar: true, alwaysOnTop: true, backgroundColor: "#00000000",
     webPreferences: { preload: path.join(__dirname, "preload.cjs"), autoplayPolicy: "no-user-gesture-required" },
   });
+  win.on("move", () => { clearTimeout(posTimer); posTimer = setTimeout(savePos, 400); });
+  win.on("close", savePos);
   if (DEV) win.loadURL("http://127.0.0.1:5188/");
   else win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
 }
@@ -132,9 +155,9 @@ ipcMain.on("set-size", (_e, w, h, newCubeY) => {
   w = Math.round(w); h = Math.round(h); newCubeY = Math.round(newCubeY);
   const cx = b.x + b.width / 2, cy = b.y + cubeY;
   cubeY = newCubeY;
-  const x = Math.min(Math.max(Math.round(cx - w / 2), wa.x), wa.x + wa.width - w);
-  const y = Math.min(Math.max(Math.round(cy - newCubeY), wa.y), wa.y + wa.height - h);
-  win.setBounds({ x, y, width: w, height: h });
+  // The window is mostly transparent, so it may overhang the screen; only the cube's centre must stay on it.
+  const ccx = Math.min(Math.max(cx, wa.x), wa.x + wa.width), ccy = Math.min(Math.max(cy, wa.y), wa.y + wa.height);
+  win.setBounds({ x: Math.round(ccx - w / 2), y: Math.round(ccy - newCubeY), width: w, height: h });
 });
 ipcMain.on("quit", () => app.quit());
 ipcMain.on("eq-set", (e, gains, on) => {

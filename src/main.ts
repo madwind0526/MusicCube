@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { Anchor, Cog, FolderOpen, Pause, Play, Repeat, Repeat1, Shuffle, Wind } from "./icons";
+import { Cog, FolderOpen, Pause, Play, Repeat, Repeat1, Shuffle, SkipForward } from "./icons";
 import { createCube, FACES } from "./cube";
-import { createPlayer } from "./audio";
-import { createVisualizer, fakeSpectrum } from "./visualizer";
+import { createPlayer, DEFAULT_TRACK, LEGACY_DEFAULT_TRACKS } from "./audio";
+import { BARS, createVisualizer, fakeSpectrum } from "./visualizer";
+import { createSpectrum } from "./spectrum";
 import { onExternalChange, s, save } from "./settings";
 import { applyAuto } from "./autocolor";
 
@@ -30,12 +31,25 @@ cube.mesh.quaternion.setFromEuler(new THREE.Euler(0.5, -0.6, 0));
 const player = createPlayer(refreshIcons);
 player.shuffle = s.shuffle;
 player.repeat = s.repeat;
+if (s.urls.length === 1 && LEGACY_DEFAULT_TRACKS.includes(s.urls[0])) { s.urls = [DEFAULT_TRACK]; save(); } // the default song changed
 player.setEq(s.eq, true);
 window.api?.onEqSet((gains, on) => player.setEq(gains, on));
-const analyserData = new Uint8Array(128);
-const viz = createVisualizer(document.getElementById("viz") as HTMLCanvasElement, (d, now) => {
-  if (player.synthetic) fakeSpectrum(d, now);
-  else { player.analyser.getByteFrequencyData(analyserData); d.set(analyserData); }
+const spectrum = createSpectrum(BARS);
+const dbData = new Float32Array(2048); // frequencyBinCount for fftSize 4096 (cava on)
+const byteData = new Uint8Array(128); // frequencyBinCount for fftSize 256 (cava off)
+const viz = createVisualizer(document.getElementById("viz") as HTMLCanvasElement, (d, now, dt) => {
+  if (player.synthetic) { fakeSpectrum(d, now); return; }
+  const an = player.analyser;
+  if (s.cava) {
+    if (an.fftSize !== 4096) { an.fftSize = 4096; an.smoothingTimeConstant = 0; } // spectrum.ts does the smoothing
+    an.getFloatFrequencyData(dbData);
+    spectrum.process(dbData, an.context.sampleRate, dt, d);
+  } else {
+    // The plain method: small FFT with the analyser's own smoothing, linear bins read on a power curve.
+    if (an.fftSize !== 256) { an.fftSize = 256; an.smoothingTimeConstant = 0.8; }
+    an.getByteFrequencyData(byteData);
+    for (let k = 0; k < d.length; k++) d[k] = byteData[2 + Math.floor(Math.pow(k / (d.length - 1), 1.4) * 70)] / 255;
+  }
 });
 
 let eqAvailable = false;
@@ -51,7 +65,7 @@ function refreshIcons() {
   cube.setIcon("repeat", s.repeat === "one" ? Repeat1 : Repeat, s.repeat !== "off");
   cube.setIcon("folder", FolderOpen);
   cube.setIcon("settings", Cog);
-  cube.setIcon("hold", s.floating ? Wind : Anchor);
+  cube.setIcon("next", SkipForward);
   syncEqState();
 }
 
@@ -65,7 +79,7 @@ const ACTIONS = {
   },
   folder: () => window.api?.openPanel("folder", anchorY()),
   settings: () => window.api?.openPanel("settings", anchorY()),
-  hold: () => { s.floating = !s.floating; save(); refreshIcons(); },
+  next: () => player.next(),
 };
 
 // ---- window layout: a square window centred on the cube; settings and folder pick open in their own window ----
@@ -164,7 +178,7 @@ function frame(now: number) {
     spin.multiplyScalar(Math.exp(-2.5 * dt));
   }
   cube.mesh.position.y = s.floating ? Math.sin(now / 700) * 0.08 : 0; // the "floating" sway
-  viz.update(now, player.playing);
+  viz.update(now, dt, player.playing);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }

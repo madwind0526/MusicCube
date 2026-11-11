@@ -5,10 +5,10 @@ import { ic } from "./ui";
 import { compose } from "./textures";
 import { s } from "./settings";
 
-export type Action = "play" | "shuffle" | "repeat" | "folder" | "settings" | "hold";
+export type Action = "play" | "shuffle" | "repeat" | "folder" | "settings" | "next";
 
 // BoxGeometry material order: +x, -x, +y, -y, +z, -z
-export const FACES: Action[] = ["play", "shuffle", "repeat", "folder", "settings", "hold"];
+export const FACES: Action[] = ["play", "shuffle", "repeat", "folder", "settings", "next"];
 
 const iconCache = new Map<IconNode, Promise<HTMLImageElement | null>>();
 // Lucide icon (the set Paradise uses) -> image, so it can be drawn onto a face texture.

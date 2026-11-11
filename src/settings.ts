@@ -10,7 +10,9 @@ export interface Settings {
   /** Icon relief: -1 engraved .. 0 flat .. +1 embossed. */
   relief: number;
   /** Visualizer: mode, line/bar thickness (px at size 1) and afterimage 0..1.5. */
-  viz: "bars" | "wave" | "rings"; vizWidth: number; vizTrail: number;
+  viz: "bars" | "wave" | "rings" | "ocean"; vizWidth: number; vizTrail: number;
+  /** Spectrum processing: true = cava-style (log bands, gravity, auto sensitivity), false = the plain analyser bins. */
+  cava: boolean;
   /** Equalizer: 10 gains in -100..100 and the selected preset name. */
   eq: number[]; eqPreset: string;
   size: number; opacity: number;
@@ -22,7 +24,7 @@ const KEY = "musiccube.settings";
 const DEFAULTS: Settings = {
   color: "#8f7cff", patternColor: "#4b3fb0", iconColor: "#241d52",
   auto: true, manualPattern: false, manualIcon: false, userTex: [],
-  texture: "plain", relief: 0.5, viz: "bars", vizWidth: 3, vizTrail: 0.4, size: 1, opacity: 1,
+  texture: "plain", relief: 0.5, viz: "bars", vizWidth: 3, vizTrail: 0.4, cava: true, size: 1, opacity: 1,
   eq: Array(10).fill(0), eqPreset: "Flat",
   onTop: true, floating: true, shuffle: false, repeat: "all", folder: "", playlistFile: "", urls: [], sourceRevision: 0,
 };

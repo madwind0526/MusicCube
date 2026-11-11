@@ -99,7 +99,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
 .check input { width: 15px; height: 15px; margin: 0; accent-color: #fff; cursor: pointer; }
 .pair { display: flex; gap: 10px; }
 .pair > .row { flex: 1; min-width: 0; gap: 4px; }
-.row.center { justify-content: center; gap: 22px; }
+.row.center { justify-content: center; gap: 8px 16px; flex-wrap: wrap; }
 .row.center .check { flex: none; }
 .pm { flex: none; width: 10px; text-align: center; font-size: 13px; color: var(--dim); }
 
