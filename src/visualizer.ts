@@ -1,4 +1,5 @@
 import { s } from "./settings";
+import { bandWeights, evolve, makePlate, stepParticles } from "./chladni";
 
 const N = 64; // points around the circle; the spectrum covers half of them and is mirrored left/right
 export const BARS = N / 2 + 1; // distinct spectrum values: bass (bottom) .. treble (top)
@@ -13,6 +14,11 @@ export function createVisualizer(canvas: HTMLCanvasElement, fill: (d: Float32Arr
   let cx = 0, cy = 0, u = 1; // circle centre (css px) and px per cube-size unit (scales every length)
   let history: { t: number; d: Float32Array }[] = [];
   let phase = 0; // ocean mode: wave phase, advanced by the music's energy
+  // cymatics mode: sand grains on a Chladni plate (x, y pairs in the unit disc), the plate and its drift
+  const sand = new Float32Array(2 * 3200);
+  for (let i = 0; i < sand.length; i += 2) { const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()); sand[i] = Math.cos(a) * r; sand[i + 1] = Math.sin(a) * r; }
+  const plate = makePlate();
+  let platePhase = 0, shake = 0, slowBass = 0, sandHue = 200;
   let oceanHue = 210; // ocean mode: base colour, drifts round the colour wheel (faster when the music is loud)
 
   /** Call on every window/size change: (centre x, centre y, cube pixel size) in css px. */
@@ -107,6 +113,32 @@ export function createVisualizer(canvas: HTMLCanvasElement, fill: (d: Float32Arr
     }
   }
 
+  // Cymatics: two plates (bass and treble), blended by how much sound each has. Their mode numbers
+  // drift all the time, so the lines keep flowing instead of repeating. A bass hit shakes the sand loose and it
+  // settles again; the picture is repeated four ways (turned by 90 degrees, but it does not rotate over time) and changes colour with the radius.
+  function cymatics(src: Float32Array, dt: number) {
+    const target = bandWeights(src);
+    if (target) for (let k = 0; k < plate.w.length; k++) plate.w[k] += (target[k] - plate.w[k]) * 0.12;
+    const bass = avg(src, 0, 5), loud = avg(src, 0, BARS);
+    platePhase += dt * (0.2 + loud * 0.8); // slow enough for the sand to follow the lines
+    evolve(plate, platePhase);
+    slowBass += (bass - slowBass) * 0.05;
+    shake = Math.max(shake * 0.88, Math.max(0, bass - slowBass - 0.03) * 9); // a bass hit relative to the recent level
+    const v = 0.003 + loud * 0.008 + Math.min(shake, 1) * 0.05;
+    for (let k = 0; k < 2; k++) stepParticles(sand, plate, v, Math.random, 0.0011);
+    sandHue = (sandHue + dt * (10 + loud * 40)) % 360;
+    const R = 250 * u * (1 + bass * 0.05), dot = Math.max(1.5, (1.6 + s.vizWidth * 0.3) * u);
+    const rings5 = Array.from({ length: 5 }, () => new Path2D()); // one colour per radius band
+    for (let q = 0; q < 4; q++) { // the plate and its three copies turned by 90 degrees
+      const c = Math.round(Math.cos(q * Math.PI / 2)), sn = Math.round(Math.sin(q * Math.PI / 2));
+      for (let i = 0; i < sand.length; i += 2) {
+        const x = sand[i], y = sand[i + 1];
+        rings5[Math.min(4, Math.floor(Math.hypot(x, y) * 5))].rect(cx + (x * c - y * sn) * R - dot / 2, cy + (x * sn + y * c) * R - dot / 2, dot, dot);
+      }
+    }
+    rings5.forEach((path, b) => { g.fillStyle = `hsl(${(sandHue + b * 38) % 360} 90% ${58 + b * 3}% / 0.95)`; g.fill(path); });
+  }
+
   function update(now: number, dt: number, playing: boolean) {
     const w = canvas.width / (window.devicePixelRatio || 1), h = canvas.height / (window.devicePixelRatio || 1);
     if (!playing) { g.clearRect(0, 0, w, h); history = []; return; }
@@ -119,6 +151,7 @@ export function createVisualizer(canvas: HTMLCanvasElement, fill: (d: Float32Arr
     if (s.viz === "bars") bars(data);
     else if (s.viz === "wave") loop(data, 100 * u, 62 * u, 1, s.vizWidth * u);
     else if (s.viz === "ocean") ocean(data, dt);
+    else if (s.viz === "cymatics") cymatics(data, dt);
     else {
       history.push({ t: now, d: data.slice() });
       while (history.length > 1 && now - history[0].t > RINGS * HISTORY_MS + 300) history.shift();

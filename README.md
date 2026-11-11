@@ -1,6 +1,6 @@
 # MusicCube
 
-MusicCube is a tiny music player that floats on the Windows desktop as a borderless, transparent 3D cube, like an icon. Drag it and it turns in any direction. Each of its six faces is a button. While music plays, the sound is drawn around the cube as bars, a wave, rings or an ocean.
+MusicCube is a tiny music player that floats on the Windows desktop as a borderless, transparent 3D cube, like an icon. Drag it and it turns in any direction. Each of its six faces is a button. While music plays, the sound is drawn around the cube as bars, a wave, rings, an ocean or sand patterns.
 
 <p align="center">
   <img src="docs/images/cube-ocean.png" alt="The cube with the ocean visualizer" width="280">
@@ -14,7 +14,7 @@ The screenshots were captured with a transparent window, so the desktop shows up
 - **A cube, not a window.** No frame, no title bar. The window is transparent and the mouse passes through everywhere except the cube itself. The cube sways gently (switchable) and the app remembers where you left it.
 - **Six face buttons.** Play/pause, shuffle, repeat (off / all / one), music source, settings, next track.
 - **Music from anywhere.** A local folder (all sub-folders), a playlist file (`.m3u`, `.m3u8`, `.pls`), web or YouTube links, or the built-in default YouTube song when nothing is chosen.
-- **Four ways to see the sound.** Bars, one closed wave, rings (the SongYUE2 style: each ring shows an earlier moment), and an ocean of colour-shifting waves. Thickness and afterimage are adjustable.
+- **Five ways to see the sound.** Bars, one closed wave, rings (the SongYUE2 style: each ring shows an earlier moment), an ocean of colour-shifting waves, and cymatics: thousands of grains of sand gather on the nodal lines of a vibrating plate (Chladni patterns). Two plates, one for the bass and one for the treble, are blended by how loud each is, their mode numbers drift all the time so the picture never repeats, a bass hit shakes the sand loose, and the pattern is repeated four ways and changes colour with the radius. Thickness and afterimage are adjustable.
 - **A spectrum that looks like the music.** The signal processing of [cava](https://github.com/karlstav/cava) is ported: log-spaced bands, treble compensation, gravity fall-off, smoothing and automatic sensitivity. It can be switched off in the settings.
 - **Your own look.** Rounded cube, three colours (background, pattern, icon) with optional auto contrast, seven built-in surface textures plus up to three of your own pictures, an icon relief slider from engraved through flat to embossed, size and opacity.
 - **10-band equalizer** for local audio, with the Paradise presets.
@@ -64,7 +64,7 @@ The equalizer works on local files only.
 
 ## Settings
 
-The settings window has, from the top: the three colour pickers (background, pattern, icon) and the power and close buttons; the texture grid (7 built-in, 3 yours); the relief slider; the four visualizer modes; thickness and afterimage; size and opacity; the check boxes Auto contrast, Always on top, Floating and Cava spectrum; and the equalizer. Hover any icon to see what it is.
+The settings window has, from the top: the three colour pickers (background, pattern, icon) and the power and close buttons; the texture grid (7 built-in, 3 yours); the relief slider; the five visualizer modes; thickness and afterimage; size and opacity; the check boxes Auto contrast, Always on top, Floating and Cava spectrum; and the equalizer. Hover any icon to see what it is.
 
 Settings are saved in the app's user-data folder (`settings.json`), and the window position in `window.json`.
 
@@ -97,10 +97,12 @@ If you launch Electron from a shell that has `ELECTRON_RUN_AS_NODE` set (some ag
 | `src/autocolor.ts` | Auto contrast |
 | `src/audio.ts` | Players (local, remote, YouTube), equalizer, system-audio capture |
 | `src/spectrum.ts` | The cava signal processing |
-| `src/visualizer.ts` | Bars, wave, rings and ocean on a 2D canvas behind the cube |
+| `src/visualizer.ts` | Bars, wave, rings, ocean and cymatics on a 2D canvas behind the cube |
+| `src/chladni.ts` | The Chladni plate formula, the sound-to-pattern mapping and the sand simulation |
 | `src/popup.ts`, `src/panel.ts`, `panel.html` | The settings and music source window |
 | `src/settings.ts` | Settings and how two windows keep them in sync |
-| `test/` | Unit tests for the player, playlists and the spectrum |
+| `test/` | Unit tests for the player, playlists, the spectrum and the Chladni sand |
+| `scripts/` | Store images: `store-capture.mjs` (transparent captures of the running app) and `store-mockup.py` (composes `store/`) |
 | `docs/` | Screenshots |
 
 ## Notes and limits
@@ -113,5 +115,6 @@ If you launch Electron from a shell that has `ELECTRON_RUN_AS_NODE` set (some ag
 ## Credits
 
 - [cava](https://github.com/karlstav/cava) by Karl Stavestrand (MIT): the spectrum processing was ported to TypeScript.
+- [StellarScript/Cymatics](https://github.com/StellarScript/Cymatics) (MIT): the Chladni plate formula behind the cymatics mode.
 - Icons from [Lucide](https://lucide.dev); 3D with [Three.js](https://threejs.org); desktop shell with [Electron](https://www.electronjs.org).
 - The look and feel of the music source window, the equalizer presets and the default-song idea follow the author's Paradise project; the ring visualizer follows SongYUE2.

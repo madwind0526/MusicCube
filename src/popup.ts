@@ -1,4 +1,4 @@
-import { Activity, ArrowUp, AudioLines, Brush, Check, Eye, Folder, FolderOpen, Ghost, Info, ListMusic, Maximize2, Music, Plus, Power, SlidersVertical, Target, Waves, X } from "lucide";
+import { Activity, Atom, ArrowUp, AudioLines, Brush, Check, Eye, Folder, FolderOpen, Ghost, Info, ListMusic, Maximize2, Music, Plus, Power, SlidersVertical, Target, Waves, X } from "lucide";
 import type { IconNode } from "lucide";
 import { h, ic } from "./ui";
 import { s, save, saveSoon } from "./settings";
@@ -276,7 +276,7 @@ export function openSettings() {
 
     // ---- visualizer mode ----
     const modes = h("div", "row", label(Activity, "시각화"));
-    for (const [id, icon, name] of [["bars", AudioLines, "막대"], ["wave", Activity, "파형"], ["rings", Target, "고리 (SongYUE2)"], ["ocean", Waves, "파도"]] as const) {
+    for (const [id, icon, name] of [["bars", AudioLines, "막대"], ["wave", Activity, "파형"], ["rings", Target, "고리 (SongYUE2)"], ["ocean", Waves, "파도"], ["cymatics", Atom, "사이매틱스 (Chladni)"]] as const) {
       const b = tb(icon, name, () => { s.viz = id; save(); render(); }, "icon");
       b.classList.toggle("on", s.viz === id);
       modes.append(b);

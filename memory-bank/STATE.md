@@ -2,10 +2,10 @@
 
 ## Current Wave
 
-- **Wave:** 11
+- **Wave:** 12
 - **Status:** Complete
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** v0.2.0 released 2026-11-11 (cava spectrum, new visualizer modes, window position memory, next-track face)
+- **Last Checkpoint:** v0.2.1 released 2026-11-12 (cymatics visualizer mode)
 
 ## Wave History
 
@@ -22,6 +22,7 @@
 | 9 | 설정 영구 저장 및 코드 리뷰 수정과 회귀 검증 | Complete |
 | 10 | 10밴드 이퀄라이저, v0.1.1 릴리스 | Complete |
 | 11 | cava 스펙트럼, 시각화 4모드(파도 포함), 별도 설정 창, 창 위치 기억, 다음 곡 면, 기본곡 변경, README, v0.2.0 릴리스 | Complete |
+| 12 | Cymatics(Chladni 모래) 시각화 모드, 앱 등록용 이미지(store/, git 제외), v0.2.1 릴리스 | Complete |
 
 ## Session Notes
 

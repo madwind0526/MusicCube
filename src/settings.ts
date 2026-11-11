@@ -10,7 +10,7 @@ export interface Settings {
   /** Icon relief: -1 engraved .. 0 flat .. +1 embossed. */
   relief: number;
   /** Visualizer: mode, line/bar thickness (px at size 1) and afterimage 0..1.5. */
-  viz: "bars" | "wave" | "rings" | "ocean"; vizWidth: number; vizTrail: number;
+  viz: "bars" | "wave" | "rings" | "ocean" | "cymatics"; vizWidth: number; vizTrail: number;
   /** Spectrum processing: true = cava-style (log bands, gravity, auto sensitivity), false = the plain analyser bins. */
   cava: boolean;
   /** Equalizer: 10 gains in -100..100 and the selected preset name. */

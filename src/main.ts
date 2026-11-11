@@ -193,4 +193,4 @@ window.api?.setOnTop(s.onTop);
 if (s.folder || s.playlistFile || s.urls.length) void applySource();
 requestAnimationFrame(frame);
 
-if (import.meta.env.DEV) (window as any).__mc = { player, ACTIONS, s, cube }; // test hook, dev mode only
+if (import.meta.env.DEV) (window as any).__mc = { player, ACTIONS, s, cube, save }; // test hook, dev mode only

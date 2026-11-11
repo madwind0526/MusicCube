@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-A tiny music player that floats on the Windows desktop as a borderless, transparent 3D cube (like an icon). Dragging rotates it freely in any direction; each face is a button (play/pause, shuffle, repeat, folder = music source, settings, next track). While music plays, the sound is drawn around the cube as bars, a wave, rings or an ocean. See `README.md` for the user-facing description.
+A tiny music player that floats on the Windows desktop as a borderless, transparent 3D cube (like an icon). Dragging rotates it freely in any direction; each face is a button (play/pause, shuffle, repeat, folder = music source, settings, next track). While music plays, the sound is drawn around the cube as bars, a wave, rings, an ocean or cymatics (Chladni sand). See `README.md` for the user-facing description.
 
 ## Tech Stack
 
@@ -38,11 +38,13 @@ When launching Electron from the Claude shell, unset `ELECTRON_RUN_AS_NODE` firs
 | `src/autocolor.ts` | auto contrast for pattern/icon colours |
 | `src/audio.ts` | local/remote/YouTube players, 10-band EQ, system-audio loopback capture |
 | `src/spectrum.ts` | cava signal processing (log bands, gravity, auto sensitivity) |
-| `src/visualizer.ts` | bars / wave / rings / ocean on a 2D canvas behind the cube |
+| `src/visualizer.ts` | bars / wave / rings / ocean / cymatics on a 2D canvas behind the cube |
+| `src/chladni.ts` | Chladni plate formula, spectrum-to-mode mapping, sand step (pure functions, tested) |
 | `src/popup.ts`, `src/panel.ts`, `panel.html` | settings and music-source window (its own Electron window) |
 | `src/settings.ts` | settings object, disk + localStorage persistence, cross-window sync via storage events |
 | `src/icons.ts`, `src/ui.ts` | Lucide icons, small DOM helpers |
-| `test/` | player, playlist and spectrum tests (TS is loaded by stripping types and running in `vm`) |
+| `test/` | player, playlist, spectrum and Chladni tests (TS is loaded by stripping types and running in `vm`; the module under test must have no imports) |
+| `scripts/` | `store-capture.mjs` (needs `npm run dev`; `ONLY=<scene>` captures one scene) and `store-mockup.py` write `store/` (store images) |
 
 ## Controls
 
