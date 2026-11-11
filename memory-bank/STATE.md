@@ -2,10 +2,10 @@
 
 ## Current Wave
 
-- **Wave:** 10
+- **Wave:** 11
 - **Status:** Complete
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 10-band equalizer implemented, verified, and released as v0.1.1 2026-11-11
+- **Last Checkpoint:** v0.2.0 released 2026-11-11 (cava spectrum, new visualizer modes, window position memory, next-track face)
 
 ## Wave History
 
@@ -20,6 +20,8 @@
 | 7 | 기본 YouTube 재생목록 전체 반복 복구 | Complete |
 | 8 | Paradise YouTube 재생 결과 재검증 및 문제 기록 정정 | Complete |
 | 9 | 설정 영구 저장 및 코드 리뷰 수정과 회귀 검증 | Complete |
+| 10 | 10밴드 이퀄라이저, v0.1.1 릴리스 | Complete |
+| 11 | cava 스펙트럼, 시각화 4모드(파도 포함), 별도 설정 창, 창 위치 기억, 다음 곡 면, 기본곡 변경, README, v0.2.0 릴리스 | Complete |
 
 ## Session Notes
 

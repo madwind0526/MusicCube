@@ -211,3 +211,12 @@ canvas.addEventListener("lostpointercapture", () => { down = null; });
 npm run build
 node --test test/playlist.test.cjs
 ```
+
+---
+
+## 후속 메모 (2026-11-11, v0.2.0)
+
+- 이 리뷰는 v0.1.0 시점의 코드를 대상으로 했고, 본문은 그대로 둡니다.
+- **M-1 (영어 UI 문구)**: 색상 선택기의 말풍선 3개("Background color", "Pattern color", "Icon color")와 체크박스(Auto contrast, Always on top, Floating, Cava spectrum)는 사용자가 영어로 요청한 것이므로 G-02의 예외로 둡니다. 되돌리지 마세요. 근거는 `CLAUDE.md`와 `memory-bank/knowledge/RULES.md`에 기록했습니다.
+- **v0.2.0에서 이 리뷰가 다루지 않은 새 코드**: `src/spectrum.ts`(cava 처리), `src/visualizer.ts`(2D 캔버스, 4개 모드), 시스템 오디오 loopback 캡처(`desktop/main.cjs`, `src/audio.ts`), 창 위치 저장(`window.json`), `src/textures.ts`의 사용자 질감. 다음 리뷰 때 포함하세요.
+- 새 테스트: `test/spectrum.test.cjs` (대역 위치, 무음, 자동 감도, 낙하).

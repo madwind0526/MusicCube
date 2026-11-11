@@ -49,3 +49,15 @@ Closing an Electron BrowserWindow can fire its closed callback after a replaceme
 
 ## Duplicate YouTube player during API load (2026-11-11)
 Two quick play requests before the IFrame API loads can each start player creation. Guard the pending start and invalidate its generation when the source changes. Verified with an automated test and a live Electron run that produced one iframe.
+
+## three.js opacity slider has no effect (2026-11-11)
+Setting `material.opacity` and `material.transparent` at runtime changed nothing visible. `MeshStandardMaterial` compiles an `OPAQUE` define that depends on `transparent`, so flipping it needs `material.needsUpdate = true`. Do it only when the flag actually changes. The cube's slider maps 0..1 to 0.15..1 so it never vanishes.
+
+## Hand-made `mcfile://` URLs return 403 in tests (2026-11-11)
+After the security hardening the protocol handler needs `?token=` and an allow-listed path. In scripts, call `window.api.scan(dir)` (or `readPlaylist`) and use the URLs it returns. A wrong URL shows up as `DEMUXER_ERROR_COULD_NOT_OPEN` with `readyState 0` and an analyser that reports -Infinity everywhere.
+
+## Remote-debugging scripts picked the wrong page (2026-11-11)
+`panel.html` URLs also contain `:5188/`. Select the cube page with `url.endsWith(":5188/")`. Evaluate with `userGesture: true` for anything that needs a user activation (`getDisplayMedia`, autoplay). A harmless `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` may print when Node exits with an open WebSocket.
+
+## Backslashes in Bash-tool Python heredocs get collapsed or turned into escapes (2026-11-11)
+Editing a Windows path such as `C:\Claude\MusicCube\vite.config.ts` through a Python heredoc turned the `\v` into a vertical tab and corrupted a row of PORTS.md. Build such paths with `chr(92)`, or edit the file with the Edit tool. Check the result with `grep -c $'\x0b'`.
