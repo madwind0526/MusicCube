@@ -22,7 +22,9 @@ The screenshots were captured with a transparent window, so the desktop shows up
 
 ## Install
 
-Download `MusicCube Setup <version>.exe` from the [Releases](https://github.com/madwind0526/MusicCube/releases) page and run it. The installer is **not code-signed**, so Windows SmartScreen may warn you; choose "More info" and then "Run anyway".
+No installer. Download `MusicCube-<version>.zip` from the [Releases](https://github.com/madwind0526/MusicCube/releases) page, unzip it anywhere you can write to (not `Program Files`) and run `MusicCube\MusicCube.exe`. The app is **not code-signed**, so Windows SmartScreen may warn you; choose "More info" and then "Run anyway".
+
+Everything the app saves (settings, window position, cache) stays in the `data` folder next to `MusicCube.exe`, so the folder can be copied or deleted as a whole. Nothing is written to `%APPDATA%`.
 
 ## Using it
 
@@ -66,7 +68,7 @@ The equalizer works on local files only.
 
 The settings window has, from the top: the three colour pickers (background, pattern, icon) and the power and close buttons; the texture grid (7 built-in, 3 yours); the relief slider; the five visualizer modes; thickness and afterimage; size and opacity; the check boxes Auto contrast, Always on top, Floating and Cava spectrum; and the equalizer. Hover any icon to see what it is.
 
-Settings are saved in the app's user-data folder (`settings.json`), and the window position in `window.json`.
+Settings are saved in `data\settings.json` next to the exe, and the window position in `data\window.json`. When run from source (`npm run start:dev`, `npm start`) the same files live in `data/` at the project root.
 
 ## Development
 
@@ -77,7 +79,7 @@ npm run start:dev    # Electron against the Vite server (run in a second termina
 npm run build        # type check + production build into dist/
 npm start            # run the built app in Electron
 npm test             # unit tests (node --test)
-npm run desktop:build   # build + Windows installer into release/
+npm run desktop:build   # build + zip of the app folder into release/MusicCube-<version>.zip (unsigned)
 ```
 
 `start.bat` builds and starts the app (`start.bat dev` runs Vite and Electron together); `stop.bat` stops the Vite port and only MusicCube's own window.
@@ -108,7 +110,8 @@ If you launch Electron from a shell that has `ELECTRON_RUN_AS_NODE` set (some ag
 ## Notes and limits
 
 - Windows only so far; it has not been tried on macOS or Linux.
-- The installer is unsigned and uses the default Electron icon.
+- The app is unsigned and uses the default Electron icon.
+- The folder must be writable, because settings are kept inside it.
 - The interface text is Korean, except a few labels that were asked for in English (the colour picker tips and the check boxes).
 - `codereview.md` holds a code review of an earlier version (in Korean).
 

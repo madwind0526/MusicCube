@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "desktop:build": "npm run build && electron-builder --win nsis",
+    "desktop:build": "npm run build && electron-builder --win dir && node scripts/zip-release.mjs",
     "test": "node --test test/*.test.cjs",
     "start": "electron .",
     "start:dev": "electron . --dev"
@@ -26,12 +26,7 @@
       "package.json"
     ],
     "win": {
-      "target": "nsis"
-    },
-    "nsis": {
-      "oneClick": false,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true
+      "target": "dir"
     }
   },
   "devDependencies": {

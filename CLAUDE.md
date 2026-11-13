@@ -8,7 +8,7 @@ A tiny music player that floats on the Windows desktop as a borderless, transpar
 
 ## Tech Stack
 
-TypeScript, Vite, Three.js (cube), Canvas 2D (visualizer), Web Audio `AnalyserNode`, Electron (transparent frameless windows), electron-builder (NSIS installer). No server, no UI framework. Structure follows Paradise.
+TypeScript, Vite, Three.js (cube), Canvas 2D (visualizer), Web Audio `AnalyserNode`, Electron (transparent frameless windows), electron-builder (`dir` target, zipped by `scripts/zip-release.mjs`). No server, no UI framework. Structure follows Paradise.
 
 ## Commands
 
@@ -18,7 +18,7 @@ npm run start:dev      # Electron against the Vite server
 npm run build          # tsc --noEmit + vite build
 npm start              # run the built app in Electron
 npm test               # node --test test/*.test.cjs
-npm run desktop:build  # build + Windows installer into release/ (unsigned)
+npm run desktop:build  # build + release/MusicCube-<version>.zip (win-unpacked folder, unsigned)
 start.bat              # build + run; "start.bat dev" = Vite + Electron --dev
 stop.bat               # kills :5188 and only the MusicCube Electron windows
 ```
@@ -29,7 +29,7 @@ When launching Electron from the Claude shell, unset `ELECTRON_RUN_AS_NODE` firs
 
 | Path | What |
 |---|---|
-| `desktop/main.cjs` | Electron main: cube window (transparent, always on top, click-through), separate settings/folder window, folder browsing, `mcfile://` audio protocol (token + allow-list), loopback audio capture, window position memory (`window.json`), settings file (`settings.json`) |
+| `desktop/main.cjs` | Electron main: cube window (transparent, always on top, click-through), separate settings/folder window, folder browsing, `mcfile://` audio protocol (token + allow-list), loopback audio capture, window position memory (`window.json`), settings file (`settings.json`); all user data lives in `<exe folder>/data` (project-root `data/` in dev), never `%APPDATA%` |
 | `desktop/preload.cjs` | exposes `window.api` (typed in `src/env.d.ts`) |
 | `desktop/playlist.cjs` | playlist file parsing and audio extension rules |
 | `src/main.ts` | scene, drag-rotate + inertia, face-click raycast, window layout, loop |

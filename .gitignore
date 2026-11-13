@@ -4,3 +4,4 @@ release/
 *.log
 /.playwright-mcp/
 /store/
+data/

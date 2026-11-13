@@ -7,6 +7,9 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
 const DEV = process.argv.includes("--dev");
+// All data (settings, window position, localStorage, cache) lives in <app folder>/data: next to the exe, or the project root in dev.
+// shortcut: breaks if the folder is read-only (e.g. Program Files), move to a writable folder or fall back to %APPDATA%.
+app.setPath("userData", path.join(app.isPackaged ? path.dirname(process.execPath) : app.getAppPath(), "data"));
 const settingsFile = path.join(app.getPath("userData"), "settings.json");
 const fileToken = crypto.randomBytes(16).toString("hex");
 const allowedAudio = new Set();
