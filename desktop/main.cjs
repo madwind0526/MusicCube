@@ -9,7 +9,7 @@ const { pathToFileURL } = require("node:url");
 const DEV = process.argv.includes("--dev");
 // All data (settings, window position, localStorage, cache) lives in <app folder>/data: next to the exe, or the project root in dev.
 // shortcut: breaks if the folder is read-only (e.g. Program Files), move to a writable folder or fall back to %APPDATA%.
-app.setPath("userData", path.join(app.isPackaged ? path.dirname(process.execPath) : app.getAppPath(), "data"));
+if (!process.argv.some((a) => a.startsWith("--user-data-dir"))) app.setPath("userData", path.join(app.isPackaged ? path.dirname(process.execPath) : app.getAppPath(), "data"));
 const settingsFile = path.join(app.getPath("userData"), "settings.json");
 const fileToken = crypto.randomBytes(16).toString("hex");
 const allowedAudio = new Set();
@@ -47,8 +47,8 @@ function createWindow() {
   const wa = screen.getPrimaryDisplay().workArea;
   const saved = loadPos();
   win = new BrowserWindow({
-    width: 560, height: 560,
-    x: saved ? Math.round(saved.cx - 280) : wa.x + wa.width - 600, y: saved ? Math.round(saved.cy - 280) : wa.y + 20,
+    width: 1008, height: 1008,
+    x: saved ? Math.round(saved.cx - 504) : wa.x + wa.width - 824, y: saved ? Math.round(saved.cy - 504) : wa.y - 204,
     title: "MusicCube", frame: false, transparent: true, hasShadow: false, resizable: false,
     skipTaskbar: true, alwaysOnTop: true, backgroundColor: "#00000000",
     webPreferences: { preload: path.join(__dirname, "preload.cjs"), autoplayPolicy: "no-user-gesture-required" },
@@ -151,7 +151,7 @@ ipcMain.on("fit-panel", (e, h) => {
 ipcMain.on("on-top", (_e, v) => { onTop = !!v; win.setAlwaysOnTop(onTop); panel?.setAlwaysOnTop(onTop); });
 ipcMain.on("ignore", (_e, v) => win.setIgnoreMouseEvents(!!v, { forward: true }));
 // Resize keeping the cube where it is: it sits at the horizontal centre, `cubeY` px below the window top.
-let cubeY = 280;
+let cubeY = 504;
 ipcMain.on("set-size", (_e, w, h, newCubeY) => {
   const b = win.getBounds();
   const wa = screen.getDisplayMatching(b).workArea;

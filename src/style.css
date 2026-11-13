@@ -2,7 +2,7 @@
 * { box-sizing: border-box; }
 /* Fully transparent page: only the cube, the visualizer and pop-ups are visible. */
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; user-select: none; color: var(--fg); font-family: system-ui, "Pretendard", "Noto Sans KR", sans-serif; }
-#c, #viz { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+#c, #viz { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: block; } /* width and height are set from main.ts */
 #viz { pointer-events: none; }
 #hud { position: absolute; inset: 0; pointer-events: none; }
 #hud > * { pointer-events: auto; }

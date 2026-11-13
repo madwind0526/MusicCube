@@ -11,6 +11,7 @@ import { applyAuto } from "./autocolor";
 
 const BASE = 360; // cube size in px at size 1
 const WIN = 560; // window size in px at size 1: room around the cube for the visualizer at its thickest
+const MAX_SIZE = 1.8; // the size slider's maximum (popup.ts); the window is fixed at the largest size so the size slider never resizes it
 
 // ---- scene ----
 const canvas = document.getElementById("c") as HTMLCanvasElement;
@@ -84,11 +85,13 @@ const ACTIONS = {
 
 // ---- window layout: a square window centred on the cube; settings and folder pick open in their own window ----
 const cubePx = () => Math.round(BASE * s.size);
-const winPx = () => Math.round(WIN * s.size);
+const winPx = () => Math.round(WIN * MAX_SIZE);
 const anchorY = () => winPx() / 2 + cubePx() / 2 - 20; // where the panel window starts, relative to this window's top
 function layoutWindow() { window.api?.setSize(winPx(), winPx(), winPx() / 2); }
 function resize() {
-  const W = window.innerWidth, H = window.innerHeight;
+  // The window is fixed at its largest size; only the canvases (centred by CSS) follow the size setting, which keeps drawing cheap.
+  const W = Math.round(WIN * s.size), H = W;
+  for (const c of [canvas, document.getElementById("viz")!]) { (c as HTMLElement).style.width = W + "px"; (c as HTMLElement).style.height = H + "px"; }
   renderer.setSize(W, H, false);
   camera.aspect = W / H;
   camera.zoom = cubePx() / H; // keeps the cube's pixel size independent of the window size
@@ -112,7 +115,7 @@ onExternalChange(() => {
   if (s.opacity !== seen.opacity) cube.applyLook();
   if (surface() !== seen.surface) cube.applyTexture();
   if (JSON.stringify(s.eq) !== seen.eq) player.setEq(s.eq, true);
-  if (s.size !== seen.size) { layoutWindow(); resize(); }
+  if (s.size !== seen.size) resize(); // only the canvases change: resizing a transparent window flickers
   if (s.onTop !== seen.onTop) window.api?.setOnTop(s.onTop);
   if (source() !== seen.source) void applySource(true);
   seen = { size: s.size, source: source(), onTop: s.onTop, opacity: s.opacity, surface: surface(), eq: JSON.stringify(s.eq) };

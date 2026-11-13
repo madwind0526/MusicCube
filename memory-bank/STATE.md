@@ -2,10 +2,10 @@
 
 ## Current Wave
 
-- **Wave:** 14
+- **Wave:** 15
 - **Status:** Complete
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 배포를 폴더형 zip으로 전환, 데이터 data/ 폴더 이동 (2026-11-13)
+- **Last Checkpoint:** v0.2.3 크기 조절 깜빡임 수정 (2026-11-14)
 
 ## Wave History
 
@@ -25,6 +25,7 @@
 | 12 | Cymatics(Chladni 모래) 시각화 모드, 앱 등록용 이미지(store/, git 제외), v0.2.1 릴리스 | Complete |
 | 13 | v0.2.1 전체 코드 리뷰 — 이전 33개 항목 처리 현황 정리 + 신규 Medium 4 / Low 18건, `codereview.md` 갱신 | Complete |
 | 14 | 설치형(NSIS) → 폴더형 zip 배포(`scripts/zip-release.mjs`), userData를 exe 옆 `data/`(개발 시 프로젝트 `data/`)로 이동, README 갱신 | Complete |
+| 15 | 크기 슬라이더 깜빡임 수정(창 고정 + 캔버스만 크기 변경), --user-data-dir 존중, v0.2.3 릴리스 | Complete |
 
 ## Session Notes
 
